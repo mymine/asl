@@ -1,7 +1,7 @@
 #!/bin/sh
 MODDIR=${0%/*}
-"$MODDIR/stop.sh"
+"$MODDIR"/stop.sh
 sleep 3
-. "$MODDIR/config.conf"
-rm -f "$SERVICEDIR/Ruri_service.sh"
+. "$MODDIR"/config.conf
+rm -f /data/adb/service.d/inotify.sh
 rm -rf "$CONTAINER_DIR"
