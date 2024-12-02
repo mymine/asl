@@ -59,7 +59,7 @@ check_config() {
 automatic() {
     if [[ -e $CONTAINER_DIR/usr ]]; then
         ui_print "- Already installed"
-        #return
+        return
     fi
     chmod 777 $MODPATH/bin/*
     ui_print "- 需联网下载根文件系统 尽量连接wifi后安装~"
