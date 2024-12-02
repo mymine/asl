@@ -45,7 +45,7 @@ inotifyfile() {
     id_value=$(sed -n 's/^id=\(.*\)$/\1/p' "$MODPATH/module.prop")
     sed -i "2c MODULEID=\"$id_value\"" "$MODPATH/Ruri_service.sh"
 
-    mv -f "$MODPATH/Ruri_service.sh" "$SERVICEDIR"
+    mv -f "$MODPATH/Ruri_service.sh" "$MODPATH/service.sh" 
 }
 
 check_config() {
@@ -100,7 +100,7 @@ main() {
 }
 
 main
-set_perm "$SERVICEDIR/Ruri_service.sh" 0 0 0700
+set_perm "$MODPATH/service.sh" 0 0 0700
 set_perm "$MODPATH/bin/ruri" 0 0 0700
 set_perm "$MODPATH/start.sh" 0 0 0700
 set_perm "$MODPATH/stop.sh" 0 0 0700
