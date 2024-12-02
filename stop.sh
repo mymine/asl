@@ -1,8 +1,10 @@
 #!/bin/sh
 MODDIR=${0%/*}
-. "$MODDIR/config.conf"
+export PATH="$MODDIR/bin:$PATH"
+. "$MODDIR"/config.conf
 
 ruriumount() {
+    fuser -k "$CONTAINER_DIR"
     ruri -U "$CONTAINER_DIR"
 }
 

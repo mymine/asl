@@ -1,5 +1,6 @@
 USER=""
 PASSWORD=""
+PORT=""
 rm -rf /etc/resolv.conf && touch /etc/resolv.conf
 echo "nameserver 1.1.1.1" >> /etc/resolv.conf
 echo "nameserver 114.114.114.114" >> /etc/resolv.conf

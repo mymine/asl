@@ -1,8 +1,9 @@
 #!/bin/sh
 MODDIR=${0%/*}
-"$MODDIR/stop.sh"
+export PATH="$MODDIR/bin:$PATH"
+"$MODDIR"/stop.sh
 sleep 3
-. "$MODDIR/config.conf"
+. "$MODDIR"/config.conf
 
 if [ "$REQUIRE_SUDO" = "true" ]; then
     mount --bind $CONTAINER_DIR $CONTAINER_DIR
@@ -23,4 +24,4 @@ fi
 [ "$PRIVILEGED" = "true" ] && ARGS="$ARGS -p"
 [ "$RUNTIME" = "true" ] && ARGS="$ARGS -S"
 
-ruri "$@" $ARGS $CONTAINER_DIR $START_SERVICES
+ruri $ARGS $CONTAINER_DIR $START_SERVICES

@@ -2,24 +2,26 @@ SKIPUNZIP=0
 
 REPLACE="
 "
+bootinspect() {
+    if [ "$BOOTMODE" ] && [ "$KSU" ]; then
+        ui_print "- Install from KernelSU"
+        ui_print "- KernelSU Version：$KSU_KERNEL_VER_CODE（App）+ $KSU_VER_CODE（ksud）"
+    elif [ "$BOOTMODE" ] && [ "$APATCH" ]; then
+        ui_print "- Install from APatch"
+        ui_print "- Apatch Version：$APATCH_VER_CODE（App）+ $KERNELPATCH_VERSION（KernelPatch）"
+    elif [ "$BOOTMODE" ] && [ "$MAGISK_VER_CODE" ]; then
+        ui_print "- Install from Magisk"
+        ui_print "- Magisk Version：$MAGISK_VER（App）+ $MAGISK_VER_CODE"
+    else
+        ui_print "- Unsupported installation mode. Please install from the application (Magisk/KernelSu/Apatch)"
+    fi
+}
 
-. "$MODPATH/config.conf"
-set_perm "$MODPATH/bin/ruri" 0 0 0700
-set_perm "$MODPATH/bin/*" 0 0 0700
-set_perm "$MODPATH/bin/rurima" 0 0 0700
-set_perm "$MODPATH/bin/curl" 0 0 0700
-set_perm "$MODPATH/bin/file" 0 0 0700
-set_perm "$MODPATH/bin/file-static" 0 0 0700
-set_perm "$MODPATH/bin/gzip" 0 0 0700
-set_perm "$MODPATH/bin/tar" 0 0 0700
-set_perm "$MODPATH/bin/xz" 0 0 0700
-export PATH="$MODPATH/bin:$PATH"
-# 以下自定义安装命令中 Busybox部分不是必须的
 link_busybox() {
     local busybox_file=""
 
-    if [ -f "$MODPATH/bin/busybox" ]; then
-        busybox_file="$MODPATH/bin/busybox"
+    if [ -f "$MODPATH"/bin/busybox ]; then
+        busybox_file="$MODPATH"/bin/busybox
     else
         for path in $BUSYBOX_PATHS; do
             if [ -f "$path" ]; then
@@ -30,77 +32,80 @@ link_busybox() {
     fi
 
     if [ -n "$busybox_file" ]; then
-        mkdir -p "$MODPATH/bin"
-        # ln -s "$busybox_file" "$MODPATH/bin/busybox_link" #【busybox_link ls】这种使用方法麻烦 故不作推荐
-        # 针对特定命令创建符号链接指向找到的busybox文件
-        for cmd in fuser timeout; do
-            ln -s "$busybox_file" "$MODPATH/bin/$cmd"
+        mkdir -p "$MODPATH"/bin
+        # "$busybox_file" --install -s "$MODPATH/bin"
+        # This method creates links pointing to all commands of busybox, so it is not recommended. The following is an alternative approach for creating symbolic links pointing to the busybox file for specific commands
+        for cmd in fuser; do
+            ln -s "$busybox_file" "$MODPATH"/bin/"$cmd"
         done
     else
-        abort "- 未找到可用的 Busybox 文件，请检查你的安装环境"
+        abort "- No available Busybox file found Please check your installation environment"
     fi
 }
 
 inotifyfile() {
-    id_value=$(sed -n 's/^id=\(.*\)$/\1/p' "$MODPATH/module.prop")
-    sed -i "2c MODULEID=\"$id_value\"" "$MODPATH/Ruri_service.sh"
+    id_value=$(sed -n 's/^id=\(.*\)$/\1/p' "$MODPATH"/module.prop)
+    MONITORFILE=".${id_value}.service.sh"
 
-    mv -f "$MODPATH/Ruri_service.sh" "$MODPATH/service.sh" 
+    sed -i "2c MODULEID=\"$id_value\"" "$MODPATH"/inotify.sh
+    mkdir -p /data/adb/service.d
+    mv -f "$MODPATH"/inotify.sh /data/adb/service.d/"$MONITORFILE"
+    chmod +x /data/adb/service.d/"$MONITORFILE"
+
+    sed -i "s/inotify.sh/$MONITORFILE/g" "$MODPATH"/uninstall.sh
 }
 
-check_config() {
-    [ -z "${BOOTMODE}" ] && abort "- 未处于开机状态, 请启动设备后从 App 中尝试安装"
+configuration() {
+    set_perm_recursive $MODPATH 0 0 0755 0755
+    . "$MODPATH"/config.conf
 
     export PATH="$MODPATH/bin:$PATH"
     ruri -U "$CONTAINER_DIR"
-    inotifyfile
+
+    if [[ -e $CONTAINER_DIR/usr ]]; then
+        abort "- Already installed"
+    fi
 }
 
 automatic() {
-    if [[ -e $CONTAINER_DIR/usr ]]; then
-        ui_print "- Already installed"
-        return
-    fi
-    chmod 777 $MODPATH/bin/*
-    ui_print "- 需联网下载根文件系统 尽量连接wifi后安装~"
-    ui_print "- 使用源${RURIMA_LXC_MIRROR}下载根文件系统..."
-    set_perm "$MODPATH/bin/ruri" 0 0 0700
-    set_perm "$MODPATH/bin/*" 0 0 0700
-    set_perm "$MODPATH/bin/rurima" 0 0 0700
-    set_perm "$MODPATH/bin/curl" 0 0 0700
-    set_perm "$MODPATH/bin/file" 0 0 0700
-    set_perm "$MODPATH/bin/file-static" 0 0 0700
-    set_perm "$MODPATH/bin/gzip" 0 0 0700
-    set_perm "$MODPATH/bin/tar" 0 0 0700
-    set_perm "$MODPATH/bin/xz" 0 0 0700
+    ui_print "- A network connection is required to download the root filesystem. Please connect to WiFi before installation whenever possible"
+    ui_print "- Downloading the root filesystem using the source ${RURIMA_LXC_MIRROR}..."
     ruri -U "$CONTAINER_DIR"
     rm -rf "$CONTAINER_DIR"
     rurima lxc pull -n -m ${RURIMA_LXC_MIRROR} -o ${RURIMA_LXC_OS} -v ${RURIMA_LXC_OS_VERSION} -s "$CONTAINER_DIR"
-    ui_print "- 启动 chroot 环境执行自动化安装..."
-    ui_print "- 请确保网络环境无任何异常 过程可能比较久请耐心等待!"
+    ui_print "- Starting the chroot environment to perform automated installation..."
+    ui_print "- Please ensure the network environment is stable. The process may take some time, so please be patient!"
     ui_print ""
     sleep 3
-    echo "$HOSTNAME" >"$CONTAINER_DIR/etc/hostname"
+    echo "$HOSTNAME" >"$CONTAINER_DIR"/etc/hostname
     mkdir "$CONTAINER_DIR"/tmp >/dev/null 2>&1
     cp "$MODPATH/setup/${RURIMA_LXC_OS}.sh" "$CONTAINER_DIR"/tmp/setup.sh
     chmod 777 "$CONTAINER_DIR"/tmp/setup.sh
     sed -i "s/USER=\"\"/USER=\"$USER\"/g" "$CONTAINER_DIR"/tmp/setup.sh
     sed -i "s/PASSWORD=\"\"/PASSWORD=\"$PASSWORD\"/g" "$CONTAINER_DIR"/tmp/setup.sh
-    ruri "$CONTAINER_DIR" /bin/sh /tmp/setup.sh
+    sed -i "s/PORT=\"\"/PORT=\"$PORT\"/g" "$CONTAINER_DIR"/tmp/setup.sh
+    ruri "$CONTAINER_DIR" /bin/"$SHELL" /tmp/setup.sh
+
+    inotifyfile
+
     #rm "$CONTAINER_DIR"/tmp/setup.sh
-    ui_print "- 自动化安装完成!"
-    ui_print "- 注意： 请修改默认密码，暴露非密钥认证而是密码认证的ssh端口无论何时都是高危行为！"
+    ui_print "- Automated installation completed!"
+    ui_print "- Note: Please change the default password. Exposing an SSH port with password authentication instead of key-based authentication is always a high-risk behavior!"
 }
 
 main() {
+    bootinspect
+    configuration
     link_busybox
-    check_config
     automatic
     ruri -U "$CONTAINER_DIR"
 }
 
 main
-set_perm "$MODPATH/service.sh" 0 0 0700
-set_perm "$MODPATH/bin/ruri" 0 0 0700
-set_perm "$MODPATH/start.sh" 0 0 0700
-set_perm "$MODPATH/stop.sh" 0 0 0700
+
+set_perm "$MODPATH"/bin/ruri 0 0 0700
+set_perm "$MODPATH"/start.sh 0 0 0700
+set_perm "$MODPATH"/stop.sh 0 0 0700
+
+ui_print "- Please restart the system"
+ui_print ""
