@@ -9,6 +9,9 @@
   - bullseye
   - buster
   - trixie
+# About binary:
+file and curl command are fake, they actually calls file-static and curl-static with corrected args.        
+Thanks: https://github.com/stunnel/static-curl for curl static binary.      
 # Note:
 Only tested ubuntu oracular, if there's any bugs, please report.         
 # WARNING：
