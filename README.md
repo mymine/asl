@@ -9,6 +9,8 @@
   - bullseye
   - buster
   - trixie
+# Note:
+This module is only for armv8+       
 # About binary:
 Use [ruri](https://github.com/Moe-hacker/ruri) for container runtime, [rurima](https://github.com/Moe-hacker/rurima) for getting container rootfs.        
 file and curl command are fake, they actually calls file-static and curl-static with corrected args.        
