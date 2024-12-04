@@ -56,22 +56,22 @@ inotifyfile() {
 }
 
 configuration() {
-    set_perm_recursive $MODPATH 0 0 0755 0755
+    set_perm_recursive "$MODPATH"/bin 0 0 0755 0755
     . "$MODPATH"/config.conf
 
     export PATH="$MODPATH/bin:$PATH"
-    ruri -U "$CONTAINER_DIR"
 
-    if [[ -e $CONTAINER_DIR/usr ]]; then
-        abort "- Already installed"
+    if [[ -e $CONTAINER_DIR/* ]]; then
+        ui_print "- Already installed"
+        ruri -U "$CONTAINER_DIR"
+        rm -rf "$CONTAINER_DIR"
+        ui_print "- Uninstall the container and clean up related directories and files"
     fi
 }
 
 automatic() {
     ui_print "- A network connection is required to download the root filesystem. Please connect to WiFi before installation whenever possible"
     ui_print "- Downloading the root filesystem using the source ${RURIMA_LXC_MIRROR}..."
-    ruri -U "$CONTAINER_DIR"
-    rm -rf "$CONTAINER_DIR"
     rurima lxc pull -n -m ${RURIMA_LXC_MIRROR} -o ${RURIMA_LXC_OS} -v ${RURIMA_LXC_OS_VERSION} -s "$CONTAINER_DIR"
     ui_print "- Starting the chroot environment to perform automated installation..."
     ui_print "- Please ensure the network environment is stable. The process may take some time, so please be patient!"
@@ -81,7 +81,6 @@ automatic() {
     mkdir "$CONTAINER_DIR"/tmp >/dev/null 2>&1
     cp "$MODPATH/setup/${RURIMA_LXC_OS}.sh" "$CONTAINER_DIR"/tmp/setup.sh
     chmod 777 "$CONTAINER_DIR"/tmp/setup.sh
-    sed -i "s/USER=\"\"/USER=\"$USER\"/g" "$CONTAINER_DIR"/tmp/setup.sh
     sed -i "s/PASSWORD=\"\"/PASSWORD=\"$PASSWORD\"/g" "$CONTAINER_DIR"/tmp/setup.sh
     sed -i "s/PORT=\"\"/PORT=\"$PORT\"/g" "$CONTAINER_DIR"/tmp/setup.sh
     ruri "$CONTAINER_DIR" /bin/"$SHELL" /tmp/setup.sh
@@ -103,9 +102,9 @@ main() {
 
 main
 
-set_perm "$MODPATH"/bin/ruri 0 0 0700
-set_perm "$MODPATH"/start.sh 0 0 0700
-set_perm "$MODPATH"/stop.sh 0 0 0700
+# set_perm_recursive $MODPATH 0 0 0755 0644
+set_perm "$MODPATH"/start.sh 0 0 0755
+set_perm "$MODPATH"/stop.sh 0 0 0755
 
-ui_print "- Please restart the system"
 ui_print ""
+ui_print "- Please restart the system"

@@ -10,7 +10,7 @@ if [ "$REQUIRE_SUDO" = "true" ]; then
     mount -o remount,suid $CONTAINER_DIR
 fi
 
-ARGS="-w "
+ARGS="-w"
 if [ -n "$MOUNT_POINT" ] && [ -n "$MOUNT_ENTRANCE" ]; then
     if [ "$MOUNT_READ_ONLY" = "true" ]; then
         ARGS="$ARGS -M $MOUNT_POINT $MOUNT_ENTRANCE"
@@ -24,4 +24,4 @@ fi
 [ "$PRIVILEGED" = "true" ] && ARGS="$ARGS -p"
 [ "$RUNTIME" = "true" ] && ARGS="$ARGS -S"
 
-ruri $ARGS $CONTAINER_DIR $START_SERVICES
+ruri $ARGS $CONTAINER_DIR /bin/$SHELL -c "$START_SERVICES"
