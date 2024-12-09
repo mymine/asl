@@ -1,13 +1,18 @@
 #!/bin/sh
 MODDIR=${0%/*}
-pid=""
 
 while [ $(getprop sys.boot_completed) != 1 ]; do
-  sleep 3
+    sleep 2
 done
 
-if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
-    "$MODDIR"/start.sh
+"$MODDIR"/start.sh
+
+if [ -f "$MODDIR/.pidfile" ]; then
+    pid=$(cat "$MODDIR/.pidfile")
 else
-    sed -i 's/^pid=".*"/pid=""/' "$(realpath "$0")"
+    pid=""
+fi
+
+if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
+    sed -i "6c description=The container can be started/stopped through the start.sh/stop.sh scripts of the module" "$MODDIR/module.prop"
 fi

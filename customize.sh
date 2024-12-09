@@ -62,11 +62,20 @@ configuration() {
 
     export PATH="$MODPATH/bin:$PATH"
 
-    if [[ -d $CONTAINER_DIR ]]; then
+    [ -f "$MODPATH/setup/${RURIMA_LXC_OS}.sh" ] || abort "- Setup.sh file corresponding to $RURIMA_LXC_OS not found"
+
+    if [ -d "$CONTAINER_DIR" ]; then
         ui_print "- Already installed"
         ruri -U "$CONTAINER_DIR"
-        mv -f "$CONTAINER_DIR" "$CONTAINER_DIR".old
-        ui_print "- Shut down the container and back up the relevant directories and files to the ${RURIMA_LXC_OS}.old"
+        if [ -d "$CONTAINER_DIR.old" ]; then
+            version=1
+            while [ -d "$CONTAINER_DIR.old.$version" ]; do
+                version=$((version + 1))
+            done
+            mv "$CONTAINER_DIR.old" "$CONTAINER_DIR.old.$version"
+        fi
+        mv -f "$CONTAINER_DIR" "$CONTAINER_DIR.old"
+        ui_print "- Shut down the container and back up the relevant directories and files to the ${CONTAINER_DIR}.old"
     fi
 }
 

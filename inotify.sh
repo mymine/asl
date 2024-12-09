@@ -9,12 +9,11 @@ if command -v magisk 2>&1 >/dev/null; then
     fi
 fi
 
-until [ $(getprop sys.boot_completed) -eq 1 ]; do
+while [ $(getprop sys.boot_completed) != 1 ]; do
     sleep 2
 done
 
-[ ! -f "$MODULEDIR"/disable ] && "$MODULEDIR"/start.sh
-sed -i "6cdescription=$DESCRIPTION" "$MODULEDIR"/module.prop
+# [ ! -f "$MODULEDIR"/disable ] && "$MODULEDIR"/start.sh
 
 (
     inotifyd - "$MODULEDIR" 2>/dev/null |
@@ -40,7 +39,12 @@ sed -i "6cdescription=$DESCRIPTION" "$MODULEDIR"/module.prop
 ) &
 
 pid=$!
-sed -i "s/^pid=\".*\"$/pid=\"$pid\"/" "$MODULEDIR/service.sh"
+echo "$pid" > "$MODULEDIR"/.pidfile
 
-# If issues arise after installation, please uncomment. After restarting the system, enable/disable the module, and then check the "debug.log" output file in the current directory to determine whether the monitoring script is functioning properly
-# After checking, please delete or comment out line 22, as no log cleanup operation has been added.
+(
+    sleep 15
+    rm -f "$MODULEDIR"/.pidfile
+) &
+
+
+sed -i "6cdescription=[ inotify-pid=$pid ] Start/stop the container in real-time through this module" "$MODULEDIR"/module.prop
