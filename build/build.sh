@@ -1,41 +1,18 @@
-OS="archlinux"
-VERSION="current"
-sed -i "s/RURIMA_LXC_OS=\".*\"/RURIMA_LXC_OS=\"${OS}\"/g" config.conf
-sed -i "s/RURIMA_LXC_OS_VERSION=\".*\"/RURIMA_LXC_OS_VERSION=\"${VERSION}\"/g" config.conf
-zip -r ../asl-$OS-$VERSION.zip .
-echo asl-$OS-$VERSION.zip
+container_zip() {
+  local os=$1
+  local version=$2
 
-OS="alpine"
-VERSION="edge"
-sed -i "s/RURIMA_LXC_OS=\".*\"/RURIMA_LXC_OS=\"${OS}\"/g" config.conf
-sed -i "s/RURIMA_LXC_OS_VERSION=\".*\"/RURIMA_LXC_OS_VERSION=\"${VERSION}\"/g" config.conf
-zip -r ../asl-$OS-$VERSION.zip .
-echo asl-$OS-$VERSION.zip
+  sed -i "s/RURIMA_LXC_OS=\".*\"/RURIMA_LXC_OS=\"${os}\"/g" config.conf
+  sed -i "s/RURIMA_LXC_OS_VERSION=\".*\"/RURIMA_LXC_OS_VERSION=\"${version}\"/g" config.conf
 
-OS="centos"
-VERSION="9-Stream"
-sed -i "s/RURIMA_LXC_OS=\".*\"/RURIMA_LXC_OS=\"${OS}\"/g" config.conf
-sed -i "s/RURIMA_LXC_OS_VERSION=\".*\"/RURIMA_LXC_OS_VERSION=\"${VERSION}\"/g" config.conf
-zip -r ../asl-$OS-$VERSION.zip .
-echo asl-$OS-$VERSION.zip
+  zip -r "../asl-${os}-${version}.zip" . -x "*.git/*" -x ".github/*" -x "build/*"
+  
+  echo "asl-${os}-${version}.zip"
+}
 
-OS="debian"
-VERSION="bookworm"
-sed -i "s/RURIMA_LXC_OS=\".*\"/RURIMA_LXC_OS=\"${OS}\"/g" config.conf
-sed -i "s/RURIMA_LXC_OS_VERSION=\".*\"/RURIMA_LXC_OS_VERSION=\"${VERSION}\"/g" config.conf
-zip -r ../asl-$OS-$VERSION.zip .
-echo asl-$OS-$VERSION.zip
-
-OS="ubuntu"
-VERSION="jammy"
-sed -i "s/RURIMA_LXC_OS=\".*\"/RURIMA_LXC_OS=\"${OS}\"/g" config.conf
-sed -i "s/RURIMA_LXC_OS_VERSION=\".*\"/RURIMA_LXC_OS_VERSION=\"${VERSION}\"/g" config.conf
-zip -r ../asl-$OS-$VERSION.zip .
-echo asl-$OS-$VERSION.zip
-
-OS="ubuntu"
-VERSION="oracular"
-sed -i "s/RURIMA_LXC_OS=\".*\"/RURIMA_LXC_OS=\"${OS}\"/g" config.conf
-sed -i "s/RURIMA_LXC_OS_VERSION=\".*\"/RURIMA_LXC_OS_VERSION=\"${VERSION}\"/g" config.conf
-zip -r ../asl-$OS-$VERSION.zip .
-echo asl-$OS-$VERSION.zip
+container_zip "archlinux" "current"
+container_zip "alpine" "edge"
+container_zip "centos" "9-Stream"
+container_zip "debian" "bookworm"
+container_zip "ubuntu" "jammy"
+container_zip "ubuntu" "oracular"
