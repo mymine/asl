@@ -74,9 +74,9 @@ jobs:
             You can only install one of these modules.
           prerelease: false
           files: |
-            ${{ github.workspace }}asl-archlinux-current.zip
-            ${{ github.workspace }}/asl-alpine-edge.zip
-            ${{ github.workspace }}/asl-centos-9-Stream.zip
-            ${{ github.workspace }}/asl-debian-bookworm.zip
-            ${{ github.workspace }}/asl-ubuntu-jammy.zip
-            ${{ github.workspace }}/asl-ubuntu-oracular.zip
+            ${{ github.workspace }}/../asl-archlinux-current.zip
+            ${{ github.workspace }}/../asl-alpine-edge.zip
+            ${{ github.workspace }}/../asl-centos-9-Stream.zip
+            ${{ github.workspace }}/../asl-debian-bookworm.zip
+            ${{ github.workspace }}/../asl-ubuntu-jammy.zip
+            ${{ github.workspace }}/../asl-ubuntu-oracular.zip
