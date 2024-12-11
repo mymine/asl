@@ -7,8 +7,8 @@ else
 fi
 if [ "$STATUS" = "stopped" ]; then
     "$MODDIR"/start.sh
-    sed -i 's|\[.*\]|[status=running]|' "$MODDIR/module.prop"
+    sed -i 's|\[.*\]|[status=running😉]|' "$MODDIR/module.prop"
 else
     "$MODDIR"/stop.sh
-    sed -i 's|\[.*\]|[status=stopped]|' "$MODDIR/module.prop"
+    sed -i 's|\[.*\]|[status=stopped😇]|' "$MODDIR/module.prop"
 fi

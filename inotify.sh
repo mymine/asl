@@ -24,11 +24,11 @@ done
                 case "$events" in
                 d)
                     "$MODULEDIR"/start.sh
-                    sed -i "6cdescription=[ on : $NOW ] $DESCRIPTION" "$MODULEDIR"/module.prop
+                    sed -i "6cdescription=[status=running😉] $DESCRIPTION" "$MODULEDIR"/module.prop
                     ;;
                 n)
                     "$MODULEDIR"/stop.sh
-                    sed -i "6cdescription=[ off : $NOW ] $DESCRIPTION" "$MODULEDIR"/module.prop
+                    sed -i "6cdescription=[status=stopped😇] $DESCRIPTION" "$MODULEDIR"/module.prop
                     ;;
                 *)
                     :
@@ -45,6 +45,3 @@ echo "$pid" > "$MODULEDIR"/.pidfile
     sleep 15
     rm -f "$MODULEDIR"/.pidfile
 ) &
-
-
-sed -i "6cdescription=[ inotify-pid=$pid ] Start/stop the container in real-time through this module" "$MODULEDIR"/module.prop
