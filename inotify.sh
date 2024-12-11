@@ -24,11 +24,11 @@ done
                 case "$events" in
                 d)
                     "$MODULEDIR"/start.sh
-                    sed -i 's|^description=.*$|description=\[status=running😉\] Android Subsystem for GNU/Linux Powered by ruri' "$MODDIR/module.prop"
+                    sed -i 's|^description=.*|description=\[status=running😉\] Android Subsystem for GNU/Linux Powered by ruri|' "$MODDIR/module.prop"
                     ;;
                 n)
                     "$MODULEDIR"/stop.sh
-                    sed -i 's|^description=.*$|description=\[status=stopped😇\] Android Subsystem for GNU/Linux Powered by ruri' "$MODDIR/module.prop"
+                    sed -i 's|^description=.*|description=\[status=stopped😇\] Android Subsystem for GNU/Linux Powered by ruri|' "$MODDIR/module.prop"
                     ;;
                 *)
                     :
