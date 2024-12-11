@@ -29,6 +29,8 @@
 > - This module is only for `arm64-v8a`
 > - It has been tested only on the versions marked above
 > - If there are any bugs, please report them. Compatibility with all devices is not guaranteed
+> - If you install the module twice, it will backup old container_dir and install a new container
+> - you can install multipe OS by changeing the module id and ssh port, but this action not supported officially
 ## How to connect:
 Use port 22, user root and password 123456 by default,          
 but, please change the password once you connected to the container, and it's better to use ssh key instead of password login, note that please do not expose the ssh port to the pubnet.       
