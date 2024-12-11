@@ -14,5 +14,7 @@ else
 fi
 
 if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
-    sed -i "6c description=The container can be started/stopped through the start.sh/stop.sh scripts of the module" "$MODDIR/module.prop"
+    sed -i 's|^description=.*$|description=\[status=stopped😇\] Android Subsystem for GNU/Linux Powered by ruri' "$MODDIR/module.prop"
+else
+    sed -i 's|^description=.*$|description=\[status=running😉\] Android Subsystem for GNU/Linux Powered by ruri' "$MODDIR/module.prop"
 fi
