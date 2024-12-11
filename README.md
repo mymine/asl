@@ -29,7 +29,9 @@
 > - This module is only for `arm64-v8a`
 > - It has been tested only on the versions marked above
 > - If there are any bugs, please report them. Compatibility with all devices is not guaranteed
-
+## How to connect:
+Use port 22, user root and password 123456 by default,          
+but, please change the password once you connected to the container, and it's better to use ssh key instead of password login, note that please do not expose the ssh port to the pubnet.       
 ## About the Binary
 
 ### Powered by ruri
@@ -41,7 +43,7 @@
 
 > [!WARNING]
 > Please change the default SSH password immediately  
-> Exposing an SSH port without key-based authentication is always a high-risk action!
+> Exposing a SSH port without key-based authentication is always a high-risk action!
 >
 > 请修改默认密码，暴露非密钥认证而是密码认证的ssh端口无论何时都是高危行为！
 
