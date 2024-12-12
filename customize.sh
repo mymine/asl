@@ -36,7 +36,7 @@ link_busybox() {
         mkdir -p "$MODPATH"/bin
         # "$busybox_file" --install -s "$MODPATH/bin"
         # This method creates links pointing to all commands of busybox, so it is not recommended. The following is an alternative approach for creating symbolic links pointing to the busybox file for specific commands
-        for cmd in fuser; do
+        for cmd in fuser inotifyd; do
             ln -s "$busybox_file" "$MODPATH"/bin/"$cmd"
         done
     else
@@ -88,7 +88,9 @@ automatic() {
     ui_print "- Starting the chroot environment to perform automated installation..."
     ui_print "- Please ensure the network environment is stable. The process may take some time, so please be patient!"
     ui_print ""
-    sleep 3
+    sleep 2
+    echo "127.0.0.1 localhost" > "$CONTAINER_DIR"/etc/hosts
+    echo "::1       localhost ip6-localhost ip6-loopback" >> "$CONTAINER_DIR"/etc/hosts
     echo "$HOSTNAME" >"$CONTAINER_DIR"/etc/hostname
     mkdir -p "$CONTAINER_DIR"/tmp "$CONTAINER_DIR"/usr/local/lib/servicectl/enabled >/dev/null 2>&1
     cp "$MODPATH/setup/${RURIMA_LXC_OS}.sh" "$CONTAINER_DIR"/tmp/setup.sh
@@ -116,8 +118,7 @@ main() {
 main
 
 # set_perm_recursive $MODPATH 0 0 0755 0644
-set_perm "$MODPATH"/start.sh 0 0 0755
-set_perm "$MODPATH"/stop.sh 0 0 0755
+set_perm "$MODPATH"/container_ctrl.sh 0 0 0755
 
 ui_print ""
 ui_print "- Please restart the system"

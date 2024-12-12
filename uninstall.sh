@@ -1,8 +1,7 @@
-#!/bin/sh
 MODDIR=${0%/*}
-"$MODDIR"/stop.sh
-sleep 3
+"$MODDIR"/container_ctrl.sh stop
 . "$MODDIR"/config.conf
+
 rm -f /data/adb/service.d/inotify.sh
 umount -lf "$CONTAINER_DIR"/dev
 umount -lf "$CONTAINER_DIR"/proc
