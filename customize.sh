@@ -62,7 +62,15 @@ configuration() {
 
     export PATH="$MODPATH/bin:$PATH"
 
-    [ -f "$MODPATH/setup/${RURIMA_LXC_OS}.sh" ] || abort "- Setup.sh file corresponding to $RURIMA_LXC_OS not found"
+    CASE=$(sed -n '/case "\$LXC_OS"/,/^[[:space:]]*esac/p' "$MODPATH/setup/setup.sh")
+    SUPPORT=$(echo "$CASE" | \
+        sed -n 's/^[[:space:]]*\([a-zA-Z0-9|]*\))$/\1/p' | \
+        tr '|' ' ' | \
+        tr '\n' ' ')
+
+    if ! echo "$SUPPORT" | grep -qw "$RURIMA_LXC_OS"; then
+        abort "- $RURIMA_LXC_OS is not supported by the setup script"
+    fi
 
     if [ -d "$CONTAINER_DIR" ]; then
         ui_print "- Already installed"
@@ -89,17 +97,13 @@ automatic() {
     ui_print "- Please ensure the network environment is stable. The process may take some time, so please be patient!"
     ui_print ""
     sleep 2
-    echo "127.0.0.1 localhost" > "$CONTAINER_DIR"/etc/hosts
-    echo "::1       localhost ip6-localhost ip6-loopback" >> "$CONTAINER_DIR"/etc/hosts
     echo "$HOSTNAME" >"$CONTAINER_DIR"/etc/hostname
     mkdir -p "$CONTAINER_DIR"/tmp "$CONTAINER_DIR"/usr/local/lib/servicectl/enabled >/dev/null 2>&1
-    cp "$MODPATH/setup/${RURIMA_LXC_OS}.sh" "$CONTAINER_DIR"/tmp/setup.sh
+    cp "$MODPATH"/setup/setup.sh "$CONTAINER_DIR"/tmp/setup.sh
     cp -r "$MODPATH"/setup/servicectl/* "$CONTAINER_DIR"/usr/local/lib/servicectl/
     chmod 777 "$CONTAINER_DIR"/tmp/setup.sh "$CONTAINER_DIR"/usr/local/lib/servicectl/servicectl "$CONTAINER_DIR"/usr/local/lib/servicectl/serviced
-    sed -i "s/PASSWORD=\"\"/PASSWORD=\"$PASSWORD\"/g" "$CONTAINER_DIR"/tmp/setup.sh
-    sed -i "s/PORT=\"\"/PORT=\"$PORT\"/g" "$CONTAINER_DIR"/tmp/setup.sh
 
-    ruri "$CONTAINER_DIR" /bin/"$SHELL" /tmp/setup.sh
+    ruri "$CONTAINER_DIR" /bin/"$SHELL" /tmp/setup.sh "$RURIMA_LXC_OS" "$PASSWORD" "$PORT"
 
     inotifyfile
     #rm "$CONTAINER_DIR"/tmp/setup.sh
