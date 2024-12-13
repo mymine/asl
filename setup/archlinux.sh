@@ -113,7 +113,7 @@ sed -i "/^CheckSpace/s/^/#/" /etc/pacman.conf
 sed -i "/^#IgnorePkg/a\IgnorePkg = linux-aarch64 linux-firmware" /etc/pacman.conf
 cat > /etc/pacman.d/mirrorlist <<-'EndOfArchMirrors'
 ## Archlinux arm
-Server = https://mirror.archlinuxarm.org/$arch/$repo
+Server = http://mirror.archlinuxarm.org/$arch/$repo
 ## Server = https://mirrors.ustc.edu.cn/archlinuxarm/$arch/$repo
 ## Server = https://mirrors.bfsu.edu.cn/archlinuxarm/$arch/$repo
 ## Server = https://mirrors.tuna.tsinghua.edu.cn/archlinuxarm/$arch/$repo
