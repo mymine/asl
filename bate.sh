@@ -306,6 +306,7 @@ create_initial_backup() {
 create_new_backup() {
     local os_name="$1"
     local backup_base_dir="/data"
+    local source_dir="$backup_base_dir/$os_name"
     local current_backup="$backup_base_dir/$os_name.oid"
     local max_backups=3
     
@@ -316,9 +317,9 @@ create_new_backup() {
     fi
 
     local backup_dirs=()
-    backup_dirs+=("$backup_base_dir/$os_name.oid")
+    backup_dirs+=("$current_backup")
     for i in $(seq 1 $((max_backups - 1))); do
-        backup_dirs+=("$backup_base_dir/$os_name.oid.$i")
+        backup_dirs+=("$current_backup.$i")
     done
 
     local backup_count=0
@@ -340,10 +341,13 @@ create_new_backup() {
         done
         
         echo "正在创建新备份..."
-        cp -a "$current_backup" "${backup_dirs[0]}"
-        
-        echo "备份创建完成"
-        return 0
+        if cp -a "$source_dir" "${backup_dirs[0]}"; then
+            echo "备份创建完成"
+            return 0
+        else
+            echo "备份创建失败"
+            return 1
+        fi
     else
         echo "已达到最大备份数量"
         return 1
