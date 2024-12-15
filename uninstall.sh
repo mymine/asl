@@ -1,6 +1,6 @@
 MODDIR=${0%/*}
 "$MODDIR"/container_ctrl.sh stop
-. "$MODDIR"/config.conf
+CONTAINER_DIR="/data/$(sed -n 's/^RURIMA_LXC_OS="\([^"]*\)"/\1/p' "$MODDIR/config.conf")"
 
 rm -f /data/adb/service.d/inotify.sh
 umount -lf "$CONTAINER_DIR"/dev

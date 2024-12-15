@@ -1,7 +1,6 @@
 #!/bin/sh
 MODULEID="moduleid"
 MODULEDIR="/data/adb/modules/$MODULEID"
-DESCRIPTION="Android Subsystem for GNU/Linux Powered by ruri"
 
 if command -v magisk >/dev/null 2>&1; then
     if magisk -v | grep -q lite; then
@@ -23,11 +22,9 @@ done
             case "$events" in
                 d)
                     "$MODULEDIR/container_ctrl.sh" start
-                    sed -i "6c description=[ on ] $DESCRIPTION" "$MODULEDIR/module.prop"
                     ;;
                 n)
                     "$MODULEDIR/container_ctrl.sh" stop
-                    sed -i "6c description=[ off ] $DESCRIPTION" "$MODULEDIR/module.prop"
                     ;;
                 *)
                     :
