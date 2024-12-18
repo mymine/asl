@@ -1,6 +1,6 @@
 MODDIR=${0%/*}
-PORT=$(sed -n 's/^PORT="\([^"]*\)"/\1/p' "$MODDIR/config.conf")
-PID=$($MODDIR/bin/fuser "$PORT/tcp" 2>/dev/null)
+PORT=$(sed -n 's/^PORT=\(.*\)/\1/p' "$MODDIR/config.conf")
+PID=$("$MODDIR/bin/fuser" "$PORT/tcp" 2>/dev/null)
 
 BETA() {
     local PREFIX=/data/user/0/com.termux/files/usr
@@ -9,13 +9,13 @@ BETA() {
     local TMPDIR=$PREFIX/tmp
     local BATE=$TMPDIR/asl.sh
 
-    if [ ! -d $PREFIX ]; then
+    if [ ! -d "$PREFIX" ]; then
         echo "- TThe environment of Termux is abnormal"
         return
     fi
 
-    cp -f $MODDIR/bate.sh $BATE
-    chmod 755 $BATE
+    cp -f "$MODDIR/bate.sh" "$BATE"
+    chmod 755 "$BATE"
 
     echo "- It will run in Termux soon. Please make sure the network is working properly"
     echo "- Check whether Termux is running in the background"
@@ -55,13 +55,13 @@ update_ssh() {
 
 if [ -n "$PID" ]; then
     printf "- Stopping container...\n\n"
-    "$MODDIR"/container_ctrl.sh stop
+    "$MODDIR/container_ctrl.sh" stop
     sed -i 's|^description=.*|description=\[ stopped🙁 \] Android Subsystem for GNU/Linux Powered by ruri|' "$MODDIR/module.prop"
 
     BETA
 else
     printf "- Starting up container...\n\n"
-    "$MODDIR"/container_ctrl.sh start
+    "$MODDIR/container_ctrl.sh" start
 
     update_ssh
 fi

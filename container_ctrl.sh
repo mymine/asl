@@ -22,6 +22,23 @@ ruriumount() {
 ruristart() {
     ruriumount
 
+    # The servicectl command is an open-source project. If you find it inconvenient to use, you can opt for other startup commands It is not mandatory
+    # e.g. /usr/sbin/sshd
+    case "$RURIMA_LXC_OS" in
+        archlinux|centos)
+            START_SERVICES="servicectl start sshd"
+            ;;
+        debian|ubuntu)
+            START_SERVICES="service ssh start"
+            ;;
+        alpine)
+            START_SERVICES="rc-service sshd restart"
+            ;;
+        *)
+            START_SERVICES=""
+            ;;
+    esac
+
     if [ "$REQUIRE_SUDO" = "true" ]; then
         mount --bind $CONTAINER_DIR $CONTAINER_DIR
         mount -o remount,suid $CONTAINER_DIR
@@ -42,7 +59,7 @@ ruristart() {
     [ "$PRIVILEGED" = "true" ] && ARGS="$ARGS -p"
     [ "$RUNTIME" = "true" ] && ARGS="$ARGS -S"
 
-    ruri $ARGS $CONTAINER_DIR /bin/$SHELL -c "$START_SERVICES" &
+    ruri $ARGS "$CONTAINER_DIR" /bin/sh -c "$START_SERVICES" &
     echo "- Container started"
 }
 

@@ -21,8 +21,8 @@ bootinspect() {
 link_busybox() {
     local busybox_file=""
 
-    if [ -f "$MODPATH"/bin/busybox ]; then
-        busybox_file="$MODPATH"/bin/busybox
+    if [ -f "$MODPATH/bin/busybox" ]; then
+        busybox_file="$MODPATH/bin/busybox"
     else
         for path in $BUSYBOX_PATHS; do
             if [ -f "$path" ]; then
@@ -33,11 +33,11 @@ link_busybox() {
     fi
 
     if [ -n "$busybox_file" ]; then
-        mkdir -p "$MODPATH"/bin
+        mkdir -p "$MODPATH/bin"
         # "$busybox_file" --install -s "$MODPATH/bin"
         # This method creates links pointing to all commands of busybox, so it is not recommended. The following is an alternative approach for creating symbolic links pointing to the busybox file for specific commands
         for cmd in fuser inotifyd; do
-            ln -s "$busybox_file" "$MODPATH"/bin/"$cmd"
+            ln -s "$busybox_file" "$MODPATH/bin/$cmd"
         done
     else
         abort "- No available Busybox file found Please check your installation environment"
@@ -45,20 +45,28 @@ link_busybox() {
 }
 
 inotifyfile() {
-    id_value=$(sed -n 's/^id=\(.*\)$/\1/p' "$MODPATH"/module.prop)
+    id_value=$(sed -n 's/^id=\(.*\)$/\1/p' "$MODPATH/module.prop")
     MONITORFILE=".${id_value}.service.sh"
 
-    sed -i "2c MODULEID=\"$id_value\"" "$MODPATH"/inotify.sh
+    sed -i "2c MODULEID=\"$id_value\"" "$MODPATH/inotify.sh"
     mkdir -p /data/adb/service.d
-    mv -f "$MODPATH"/inotify.sh /data/adb/service.d/"$MONITORFILE"
-    chmod +x /data/adb/service.d/"$MONITORFILE"
+    mv -f "$MODPATH/inotify.sh" "/data/adb/service.d/$MONITORFILE"
+    chmod +x "/data/adb/service.d/$MONITORFILE"
 
-    sed -i "s/inotify.sh/$MONITORFILE/g" "$MODPATH"/uninstall.sh
+    sed -i "s/inotify.sh/$MONITORFILE/g" "$MODPATH/uninstall.sh"
 }
 
 configuration() {
-    set_perm_recursive "$MODPATH"/bin 0 0 0755 0755
-    . "$MODPATH"/config.conf
+    set_perm_recursive "$MODPATH/bin" 0 0 0755 0755
+    . "$MODPATH/config.conf"
+
+    BUSYBOX_PATHS="/data/adb/magisk/busybox
+/data/adb/ksu/bin/busybox
+/data/adb/ap/bin/busybox"
+
+    BASE_DIR="/data"
+    CONTAINER_DIR="${BASE_DIR}/${RURIMA_LXC_OS}"
+    echo "CONTAINER_DIR=${BASE_DIR}/${RURIMA_LXC_OS}" >> "$MODPATH/config.conf"
 
     export PATH="$MODPATH/bin:$PATH"
 
@@ -97,13 +105,13 @@ automatic() {
     ui_print "- Please ensure the network environment is stable. The process may take some time, so please be patient!"
     ui_print ""
     sleep 2
-    echo "$HOSTNAME" >"$CONTAINER_DIR"/etc/hostname
-    mkdir -p "$CONTAINER_DIR"/tmp "$CONTAINER_DIR"/usr/local/lib/servicectl/enabled >/dev/null 2>&1
-    cp "$MODPATH"/setup/setup.sh "$CONTAINER_DIR"/tmp/setup.sh
-    cp -r "$MODPATH"/setup/servicectl/* "$CONTAINER_DIR"/usr/local/lib/servicectl/
-    chmod 777 "$CONTAINER_DIR"/tmp/setup.sh "$CONTAINER_DIR"/usr/local/lib/servicectl/servicectl "$CONTAINER_DIR"/usr/local/lib/servicectl/serviced
+    getprop ro.product.model >"$CONTAINER_DIR/etc/hostname"
+    mkdir -p "$CONTAINER_DIR/tmp" "$CONTAINER_DIR/usr/local/lib/servicectl/enabled"
+    cp "$MODPATH/setup/setup.sh" "$CONTAINER_DIR/tmp/setup.sh"
+    cp -r "$MODPATH/setup/servicectl"/* "$CONTAINER_DIR/usr/local/lib/servicectl/"
+    chmod 777 "$CONTAINER_DIR/tmp/setup.sh" "$CONTAINER_DIR/usr/local/lib/servicectl/servicectl" "$CONTAINER_DIR/usr/local/lib/servicectl/serviced"
 
-    ruri "$CONTAINER_DIR" /bin/"$SHELL" /tmp/setup.sh "$RURIMA_LXC_OS" "$PASSWORD" "$PORT"
+    ruri "$CONTAINER_DIR" /bin/sh /tmp/setup.sh "$RURIMA_LXC_OS" "$PASSWORD" "$PORT"
 
     inotifyfile
     #rm "$CONTAINER_DIR"/tmp/setup.sh
@@ -122,7 +130,7 @@ main() {
 main
 
 # set_perm_recursive $MODPATH 0 0 0755 0644
-set_perm "$MODPATH"/container_ctrl.sh 0 0 0755
+set_perm "$MODPATH/container_ctrl.sh" 0 0 0755
 
 ui_print ""
 ui_print "- Please restart the system"

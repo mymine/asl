@@ -14,7 +14,7 @@ while [ $(getprop sys.boot_completed) != 1 ]; do
     sleep 2
 done
 
-[ ! -f "$MODULEDIR"/disable ] && "$MODULEDIR/container_ctrl.sh" start
+[ ! -f "$MODULEDIR/disable" ] && "$MODULEDIR/container_ctrl.sh" start
 
 (
     inotifyd - "$MODULEDIR" 2>/dev/null | while read -r events _ file; do

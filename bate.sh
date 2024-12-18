@@ -973,6 +973,7 @@ config_new_system() {
 
     if [ $? -eq 0 ]; then
         echo "系统 $new_os 基础配置完成"
+        echoRgb "请牢记你的密码: $sys_password 和端口: $sys_port" 3
         return 0
     else
         echo "系统 $new_os 基础配置失败"
@@ -1012,7 +1013,8 @@ switch_lxc_os() {
         return 1
     fi
 
-    sed -i "s/RURIMA_LXC_OS=\"[^\"]*\"/RURIMA_LXC_OS=\"$new_os\"/" "$CONFIG_FILE"
+    sed -i "s/^RURIMA_LXC_OS=.*/RURIMA_LXC_OS=$new_os/" "$CONFIG_FILE"
+    sed -i "s|^CONTAINER_DIR=.*|CONTAINER_DIR=$BASE_DIR/$new_os|" "$CONFIG_FILE"
 
     if [ $? -eq 0 ]; then
         echo "成功将系统切换为 $new_os"
