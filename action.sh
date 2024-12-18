@@ -2,7 +2,7 @@ MODDIR=${0%/*}
 PORT=$(sed -n 's/^PORT="\([^"]*\)"/\1/p' "$MODDIR/config.conf")
 PID=$($MODDIR/bin/fuser "$PORT/tcp" 2>/dev/null)
 
-DEV() {
+BETA() {
     local PREFIX=/data/user/0/com.termux/files/usr
     local TBIN=$PREFIX/bin
     local BASH=$TBIN/bash
@@ -58,7 +58,7 @@ if [ -n "$PID" ]; then
     "$MODDIR"/container_ctrl.sh stop
     sed -i 's|^description=.*|description=\[ stopped🙁 \] Android Subsystem for GNU/Linux Powered by ruri|' "$MODDIR/module.prop"
 
-    DEV
+    BETA
 else
     printf "- Starting up container...\n\n"
     "$MODDIR"/container_ctrl.sh start
