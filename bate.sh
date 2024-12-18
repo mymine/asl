@@ -9,6 +9,7 @@ fi
 
 MODULEID="asl"
 BASE_DIR="/data"
+BACKUP_DIR="/data"
 OS_LIST=("ubuntu" "debian" "archlinux" "alpine" "centos")
 
 echoRgb() {
@@ -33,7 +34,7 @@ abort() {
     echo -e "\e[1;31m $@ \e[0m"
     sleep 1
     rm -f $(readlink -f "$0")
-    exit 1
+    exit 0
 }
 
 echo
@@ -50,6 +51,10 @@ if ! read -t 15 -n 1 input; then
     abort "! 未输入任意按键"
 fi
 echo
+
+pause_func() {
+    read -p "按回车键继续..." pause
+}
 
 check_installed_systems() {
     local found=0
@@ -197,17 +202,15 @@ check_os_versions() {
     rm -f "$versions_found_file"
 }
 
-
 check_backup_status() {
     local os_name="$1"
-    local backup_base_dir="/data"
     local max_backups=3
     local min_backup_size=10240
 
-    local backup_dirs=()
-    backup_dirs+=("$backup_base_dir/$os_name.oid")
+    local backup_files=()
+    backup_files+=("$BACKUP_DIR/$os_name.old.tar.gz")
     for i in $(seq 1 $((max_backups - 1))); do
-        backup_dirs+=("$backup_base_dir/$os_name.oid.$i")
+        backup_files+=("$BACKUP_DIR/$os_name.old.$i.tar.gz")
     done
 
     local backup_count=0
@@ -217,14 +220,14 @@ check_backup_status() {
 
     echo "========== $os_name 备份状态 =========="
 
-    for dir in "${backup_dirs[@]}"; do
-        if [ -d "$dir" ]; then
-            local size=$(du -sb "$dir" 2>/dev/null | cut -f1)
-            local human_size=$(du -sh "$dir" 2>/dev/null | cut -f1)
-            local mtime=$(stat -c "%y" "$dir" 2>/dev/null | cut -d' ' -f1)
+    for file in "${backup_files[@]}"; do
+        if [ -f "$file" ]; then
+            local size=$(stat -c "%s" "$file" 2>/dev/null)
+            local human_size=$(numfmt --to=iec-i --suffix=B "$size" 2>/dev/null)
+            local mtime=$(stat -c "%y" "$file" 2>/dev/null | cut -d' ' -f1)
 
             echo "$((backup_count + 1)). 备份 $((backup_count + 1))"
-            echo "   位置: $dir"
+            echo "   位置: $file"
             echo "   大小: $human_size"
             echo "   创建时间: $mtime"
 
@@ -237,7 +240,7 @@ check_backup_status() {
             total_backup_size=$((total_backup_size + size))
 
             if [ -z "$latest_backup" ]; then
-                latest_backup="$dir"
+                latest_backup="$file"
             fi
         fi
     done
@@ -269,8 +272,7 @@ check_backup_status() {
 
 create_initial_backup() {
     local os_name="$1"
-    local backup_base_dir="/data"
-    local current_backup="$backup_base_dir/$os_name.oid"
+    local current_backup="$BACKUP_DIR/$os_name.old.tar.gz"
     local source_path="$BASE_DIR/$os_name"
 
     if [ ! -d "$source_path" ]; then
@@ -278,18 +280,16 @@ create_initial_backup() {
         return 1
     fi
 
-    mkdir -p "$current_backup"
-
     echo "正在创建 $os_name 的初始备份..."
-    if cp -a "$source_path"/* "$current_backup"/ 2>/dev/null; then
+    if tar -czf "$current_backup" -C "$source_path" . 2>/dev/null; then
         echo "备份创建成功"
 
-        local backup_size=$(du -sb "$current_backup" | cut -f1)
+        local backup_size=$(stat -c "%s" "$current_backup" 2>/dev/null)
         if [ "$backup_size" -lt 10240 ]; then
             echo "警告: 备份大小异常（$backup_size 字节）"
             read -p "是否重试备份? (y/N): " retry
             if [[ "$retry" =~ ^[Yy]$ ]]; then
-                rm -rf "$current_backup"
+                rm -f "$current_backup"
                 create_initial_backup "$os_name"
             else
                 return 1
@@ -299,54 +299,54 @@ create_initial_backup() {
         return 0
     else
         echo "备份创建失败"
-        rm -rf "$current_backup"
+        rm -f "$current_backup"
         return 1
     fi
 }
 
 create_new_backup() {
     local os_name="$1"
-    local backup_base_dir="/data"
-    local source_dir="$backup_base_dir/$os_name"
-    local current_backup="$backup_base_dir/$os_name.oid"
+    local source_dir="$BASE_DIR/$os_name"
+    local current_backup="$BACKUP_DIR/$os_name.old.tar.gz"
     local max_backups=3
 
-    if [ ! -d "$current_backup" ]; then
+    if [ ! -f "$current_backup" ]; then
         echo "当前备份不存在 尝试创建初始备份"
         create_initial_backup "$os_name"
         return $?
     fi
 
-    local backup_dirs=()
-    backup_dirs+=("$current_backup")
+    local backup_files=()
+    backup_files+=("$current_backup")
     for i in $(seq 1 $((max_backups - 1))); do
-        backup_dirs+=("$current_backup.$i")
+        backup_files+=("$BACKUP_DIR/$os_name.old.$i.tar.gz")
     done
 
     local backup_count=0
-    for dir in "${backup_dirs[@]}"; do
-        if [ -d "$dir" ]; then
+    for file in "${backup_files[@]}"; do
+        if [ -f "$file" ]; then
             ((backup_count++))
         fi
     done
 
     if [ $backup_count -lt $max_backups ]; then
         for ((i=backup_count; i>0; i--)); do
-            local src="${backup_dirs[$((i-1))]}"
-            local dest="${backup_dirs[i]}"
+            local src="${backup_files[$((i-1))]}"
+            local dest="${backup_files[i]}"
 
-            if [ -d "$src" ]; then
+            if [ -f "$src" ]; then
                 echo "移动备份: $src → $dest"
                 mv "$src" "$dest"
             fi
         done
 
         echo "正在创建新备份..."
-        if cp -a "$source_dir" "${backup_dirs[0]}"; then
+        if tar -czvf "${backup_files[0]}" -C "$source_dir" . 2>/dev/null; then
             echo "备份创建完成"
             return 0
         else
             echo "备份创建失败"
+            rm -f "${backup_files[0]}"
             return 1
         fi
     else
@@ -357,21 +357,20 @@ create_new_backup() {
 
 view_backup_details() {
     local os_name="$1"
-    local backup_base_dir="/data"
     local max_backups=3
 
-    local backup_dirs=()
-    backup_dirs+=("$backup_base_dir/$os_name.oid")
+    local backup_files=()
+    backup_files+=("$BACKUP_DIR/$os_name.old.tar.gz")
     for i in $(seq 1 $((max_backups - 1))); do
-        backup_dirs+=("$backup_base_dir/$os_name.oid.$i")
+        backup_files+=("$BACKUP_DIR/$os_name.old.$i.tar.gz")
     done
 
     local backup_count=0
     local available_backups=()
     
-    for dir in "${backup_dirs[@]}"; do
-        if [ -d "$dir" ]; then
-            available_backups+=("$dir")
+    for file in "${backup_files[@]}"; do
+        if [ -f "$file" ]; then
+            available_backups+=("$file")
             ((backup_count++))
         fi
     done
@@ -389,26 +388,24 @@ view_backup_details() {
     read -p "选择要查看的备份 (1-$backup_count): " detail_choice
 
     if [[ "$detail_choice" -ge 1 && "$detail_choice" -le $backup_count ]]; then
-        local detail_dir="${available_backups[$((detail_choice-1))]}"
+        local detail_file="${available_backups[$((detail_choice-1))]}"
 
-        echo "备份详情: $detail_dir"
+        echo "备份详情: $detail_file"
         echo "----------------------------"
 
-        local backup_size=$(du -sh "$detail_dir" 2>/dev/null | cut -f1)
-        echo "总大小: ${backup_size:-未知}"
+        local backup_size=$(stat -c "%s" "$detail_file" 2>/dev/null)
+        local human_size=$(numfmt --to=iec-i --suffix=B "$backup_size" 2>/dev/null)
+        echo "总大小: ${human_size:-未知}"
 
-        local file_count=$(find "$detail_dir" -type f 2>/dev/null | wc -l)
-        local dir_count=$(find "$detail_dir" -type d 2>/dev/null | wc -l)
-
+        local file_count=$(tar -tzf "$detail_file" 2>/dev/null | wc -l)
         echo "文件数量: $file_count"
-        echo "目录数量: $dir_count"
 
-        local backup_time=$(stat -c "%y" "$detail_dir" 2>/dev/null | cut -d' ' -f1)
+        local backup_time=$(stat -c "%y" "$detail_file" 2>/dev/null | cut -d' ' -f1)
         echo "最后修改时间: ${backup_time:-未知}"
 
         echo "----------------------------"
         echo "前10个文件: "
-        find "$detail_dir" -type f 2>/dev/null | head -n 10 || echo "无法列出文件"
+        tar -tzf "$detail_file" 2>/dev/null | head -n 10 || echo "无法列出文件"
 
         return 0
     else
@@ -462,7 +459,7 @@ backup_menu() {
                 ;;
         esac
 
-        read -p "按回车键继续..." pause
+        pause_func
     done
 }
 
@@ -474,17 +471,17 @@ system_backup_menu() {
         local available_systems=()
         local system_dirs=()
         
-        for dir in /data/*.oid; do
-            if [ -d "$dir" ]; then
-                local system_name=$(basename "$dir" .oid)
+        for file in "$BACKUP_DIR"/*.old.tar.gz; do
+            if [ -f "$file" ]; then
+                local system_name=$(basename "$file" .old.tar.gz)
                 available_systems+=("$system_name (已备份)")
-                system_dirs+=("$dir")
+                system_dirs+=("$file")
             fi
         done
 
         for os in "${OS_LIST[@]}"; do
             local sys_path="$BASE_DIR/$os"
-            if [ -d "$sys_path" ] && [ ! -d "/data/$os.oid" ]; then
+            if [ -d "$sys_path" ] && [ ! -f "$BACKUP_DIR/$os.old.tar.gz" ]; then
                 available_systems+=("$os (未备份)")
                 system_dirs+=("$sys_path")
             fi
@@ -517,14 +514,14 @@ system_backup_menu() {
                 read -p "系统 $selected_system 尚未备份 是否立即创建备份? (y/N): " create_backup
 
                 if [[ "$create_backup" =~ ^[Yy]$ ]]; then
-                    mkdir -p "/data/$selected_system.oid"
                     
                     echo "正在创建 $selected_system 的初始备份..."
-                    if rsync -avz --delete "$selected_path/" "/data/$selected_system.oid/"; then
+                    if tar -czf "$BACKUP_DIR/$selected_system.old.tar.gz" "$BASE_DIR/$selected_system" . 2>/dev/null; then
                         backup_menu "$selected_system"
                     else
                         echo "备份创建失败"
-                        read -p "按回车键继续..." pause
+                        rm -f "$BACKUP_DIR/$selected_system.old.tar.gz"
+                        pause_func
                     fi
                 fi
             else
@@ -532,28 +529,27 @@ system_backup_menu() {
             fi
         else
             echo "无效的选择"
-            read -p "按回车键继续..." pause
+            pause_func
         fi
     done
 }
 
 delete_oldest_backup() {
     local os_name="$1"
-    local backup_base_dir="/data"
     local max_backups=3
 
-    local backup_dirs=()
-    backup_dirs+=("$backup_base_dir/$os_name.oid")
+    local backup_files=()
+    backup_files+=("$BACKUP_DIR/$os_name.old.tar.gz")
     for i in $(seq 1 $((max_backups - 1))); do
-        backup_dirs+=("$backup_base_dir/$os_name.oid.$i")
+        backup_files+=("$BACKUP_DIR/$os_name.old.$i.tar.gz")
     done
 
     local backup_count=0
     local available_backups=()
     
-    for dir in "${backup_dirs[@]}"; do
-        if [ -d "$dir" ]; then
-            available_backups+=("$dir")
+    for file in "${backup_files[@]}"; do
+        if [ -f "$file" ]; then
+            available_backups+=("$file")
             ((backup_count++))
         fi
     done
@@ -568,7 +564,7 @@ delete_oldest_backup() {
     read -p "确认删除最旧备份 $oldest_backup? (y/N): " confirm
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
         echo "删除备份: $oldest_backup"
-        rm -rf "$oldest_backup"
+        rm -f "$oldest_backup"
         echo "备份删除成功"
         return 0
     else
@@ -579,22 +575,22 @@ delete_oldest_backup() {
 
 restore_backup() {
     local os_name="$1"
-    local backup_base_dir="/data"
-    local current_backup="$backup_base_dir/$os_name.oid"
+    local current_backup="$BACKUP_DIR/$os_name.old.tar.gz"
     local max_backups=3
+    local source_path="$BASE_DIR/$os_name"
 
-    local backup_dirs=()
-    backup_dirs+=("$backup_base_dir/$os_name.oid")
+    local backup_files=()
+    backup_files+=("$BACKUP_DIR/$os_name.old.tar.gz")
     for i in $(seq 1 $((max_backups - 1))); do
-        backup_dirs+=("$backup_base_dir/$os_name.oid.$i")
+        backup_files+=("$BACKUP_DIR/$os_name.old.$i.tar.gz")
     done
 
     local backup_count=0
     local available_backups=()
 
-    for dir in "${backup_dirs[@]}"; do
-        if [ -d "$dir" ]; then
-            available_backups+=("$dir")
+    for file in "${backup_files[@]}"; do
+        if [ -f "$file" ]; then
+            available_backups+=("$file")
             ((backup_count++))
         fi
     done
@@ -608,129 +604,80 @@ restore_backup() {
     for ((i=0; i<${#available_backups[@]}; i++)); do
         echo "$((i+1)). ${available_backups[i]}"
     done
-    echo "$((backup_count+1)). 从自定义目录还原"
+    echo "$((backup_count+1)). 从自定义文件还原"
 
     read -p "选择要还原的备份 (1-$((backup_count+1))): " restore_choice
 
     if [[ "$restore_choice" -ge 1 && "$restore_choice" -le $((backup_count+1)) ]]; then
-        local restore_dir=""
+        local restore_file=""
         if [[ "$restore_choice" -le $backup_count ]]; then
-            restore_dir="${available_backups[$((restore_choice-1))]}"
+            restore_file="${available_backups[$((restore_choice-1))]}"
         else
-            read -p "请输入自定义备份目录路径（必须以/开头）: " custom_restore_dir
+            read -p "请输入自定义备份文件路径（必须以/开头）: " custom_restore_file
 
-            if [[ ! "$custom_restore_dir" =~ ^/ ]] || [ "$custom_restore_dir" == "/" ] || [ ! -d "$custom_restore_dir" ]; then
-                echo "不能使用根目录或目录不存在"
+            if [[ ! "$custom_restore_file" =~ ^/ ]] || [ ! -f "$custom_restore_file" ]; then
+                echo "路径必须以 / 开头或文件不存在"
                 return 1
             fi
 
-            if [ ! -f "$custom_restore_dir/etc/os-release" ]; then
+            if ! tar -tzf "$custom_restore_file" &>/dev/null | grep -q "./usr/lib/os-release"; then
                 echo "未检测到有效的系统备份文件"
                 return 1
             fi
 
-            restore_dir="$custom_restore_dir"
+            restore_file="$custom_restore_file"
         fi
 
         echo "还原选项: "
-        echo "1. 还原到当前系统目录 ($current_backup)"
-        echo "2. 还原到新的备份目录"
-        echo "3. 还原到源系统目录 ($BASE_DIR/$os_name)"
-        read -p "请选择还原目标 (1-3): " restore_target
+        echo "1. 还原到新的目录"
+        echo "2. 还原到源系统目录 ($source_path)"
+        read -p "请选择还原选项 (1-2): " restore_option
 
-        local target_dir=""
-        case $restore_target in
+        case "$restore_option" in
             1)
-                target_dir="$current_backup"
+                read -p "请输入新的还原目录路径（必须以/开头）: " new_restore_dir
+                if [[ ! "$new_restore_dir" =~ ^/ ]] || [ "$new_restore_dir" == "/" ]; then
+                    echo "不能使用根目录"
+                    return 1
+                fi
+
+                if [[ "$(ls -A "$new_restore_dir")" =~ [^[:space:]] ]]; then
+                    echo "目录 '$new_restore_dir' 不为空，请注意备份现有数据。"
+                    read -p "是否仍然使用此目录进行还原? (y/n): " confirm
+                    if [[ ! "$confirm" =~ ^[yY]$ ]]; then
+                        echo "还原操作已取消。"
+                        return 1
+                    fi
+                fi
+
+                echo "正在还原到新的目录 $new_restore_dir..."
+                mkdir -p "$new_restore_dir"
+                if tar -xzf "$restore_file" -C "$new_restore_dir" 2>/dev/null; then
+                    echo "还原完成"
+                else
+                    echo "还原失败"
+                fi
                 ;;
             2)
-                read -p "请输入新的备份目录路径（必须以/开头）: " custom_dir
-
-                if [[ ! "$custom_dir" =~ ^/ ]] || [ "$custom_dir" == "/" ] || [ ! -d "$custom_dir" ]; then
-                    echo "目录路径无效"
-                    echo "不能使用根目录或目录不存在"
-                    return 1
-                fi
-
-                target_dir="${custom_dir%/}/$os_name"
-
-                if [ -d "$target_dir" ] && [ "$(ls -A "$target_dir")" ]; then
-                    echo "目标目录 $target_dir 已存在且非空"
-                    return 1
-                fi
-
-                echo "将使用目标目录: $target_dir"
-                read -p "确认创建并使用此目录? (y/N): " confirm_dir
-                if [[ ! "$confirm_dir" =~ ^[Yy]$ ]]; then
+                read -p "警告：此操作会覆盖源系统目录，确定要继续吗? (y/N): " confirm_overwrite
+                if [[ "$confirm_overwrite" =~ ^[Yy]$ ]]; then
+                    echo "正在还原到源系统目录..."
+                    rm -rf "$source_path/*" 2>/dev/null
+                    if tar -xzf "$restore_file" -C "$source_path" 2>/dev/null; then
+                        echo "还原完成"
+                    else
+                        echo "还原失败"
+                    fi
+                else
                     echo "操作取消"
-                    return 1
                 fi
-
-                mkdir -p "$target_dir"
-                ;;
-            3)
-                target_dir="$BASE_DIR/$os_name"
                 ;;
             *)
                 echo "无效的选择"
                 return 1
                 ;;
         esac
-
-        read -p "确认将 $restore_dir 还原到 $target_dir? (y/N): " confirm
-        if [[ "$confirm" =~ ^[Yy]$ ]]; then
-            mkdir -p "$target_dir"
-
-            local backup_timestamp=$(date +"%Y%m%d_%H%M%S")
-            local pre_restore_backup="$target_dir.pre_restore_$backup_timestamp"
-
-            echo "创建还原前备份: $pre_restore_backup"
-            cp -a "$target_dir" "$pre_restore_backup"
-
-            echo "正在还原备份..."
-            if rsync -avz --delete "$restore_dir/" "$target_dir/"; then
-                echo "还原成功"
-
-                read -p "是否清理备份? (y/N): " clean_backup
-                if [[ "$clean_backup" =~ ^[Yy]$ ]]; then
-                    echo "删除还原前备份: $pre_restore_backup"
-                    rm -rf "$pre_restore_backup"
-
-                    if [ "$target_dir" == "$current_backup" ]; then
-                        for dir in "${backup_dirs[@]}"; do
-                            if [ "$dir" != "$current_backup" ] && [ -d "$dir" ]; then
-                                echo "删除备份: $dir"
-                                rm -rf "$dir"
-                            fi
-                        done
-                    else
-                        if [ "$restore_dir" != "$current_backup" ]; then
-                            echo "删除已还原的原始备份目录: $restore_dir"
-                            rm -rf "$restore_dir"
-                        fi
-                    fi
-
-                    echo "备份清理完成"
-                else
-                    echo "保留所有备份"
-                fi
-
-                return 0
-            else
-                echo "还原失败"
-                echo "请不要使用安卓内部储存目录 原因未知"
-
-                if [[ "$target_dir" != "$current_backup" && "$target_dir" != "$BASE_DIR/$os_name" ]]; then
-                    echo "删除不完整的还原目标目录"
-                    rm -rf "$target_dir"
-                fi
-
-                return 1
-            fi
-        else
-            echo "操作取消"
-            return 1
-        fi
+        return 0
     else
         echo "无效的选择"
         return 1
@@ -740,8 +687,8 @@ restore_backup() {
 download_system_image() {
     local os_name="$1"
     local mirror_choice="${2:-default}"
-    local target_dir="/data/$os_name"
-    local version="${3:-latest}"
+    local target_dir="$BASE_DIR/$os_name"
+    local version="${3:-default}"
 
     declare -A MIRRORS=(
         ["default"]="https://images.linuxcontainers.org"
@@ -777,7 +724,7 @@ download_system_image() {
         return 1
     fi
 
-    if [ "$version" = "latest" ]; then
+    if [ "$version" = "default" ]; then
         version=$(echo "$versions" | tail -n 1)
     else
         if ! echo "$versions" | grep -q "^$version$"; then
@@ -800,7 +747,7 @@ download_system_image() {
     local download_url="${base_url}${path}/rootfs.tar.xz"
     local download_file="/data/local/tmp/${os_name}_${version}_rootfs.tar.xz"
 
-    mkdir -p "$target_dir"
+    mkdir -p "$target_dir" /data/local/tmp
 
     echo "开始下载 $os_name 系统镜像..."
     echo "版本: $version"
@@ -841,8 +788,6 @@ download_system_image() {
         echo "解压成功"
 
         rm -f "$download_file"
-
-        chmod -R 755 "$target_dir"
 
         return 0
     else
@@ -886,7 +831,7 @@ download_system_menu() {
 
         if [ $is_supported -eq 0 ]; then
             echo "不支持的系统: $system_choice"
-            read -p "按回车键继续..." pause
+            pause_func
             continue
         fi
 
@@ -897,7 +842,7 @@ download_system_menu() {
 
             if [[ ! "$overwrite_choice" =~ ^[Yy]$ ]]; then
                 echo "操作取消"
-                read -p "按回车键继续..." pause
+                pause_func
                 continue
             fi
 
@@ -935,7 +880,7 @@ download_system_menu() {
             echo "系统 $system_choice 下载失败"
         fi
 
-        read -p "按回车键继续..." pause
+        pause_func
     done
 }
 
@@ -948,13 +893,31 @@ delete_system() {
         return 1
     fi
 
-    local backup_path="/data/$os_name.oid"
-    if [ -d "$backup_path" ]; then
+    local backup_files=()
+    backup_files+=("$BACKUP_DIR/$os_name.old.tar.gz")
+    for i in $(seq 1 2); do
+        backup_files+=("$BACKUP_DIR/$os_name.old.$i.tar.gz")
+    done
+
+    local has_backup=false
+    for file in "${backup_files[@]}"; do
+      if [ -f "$file" ]; then
+        has_backup=true
+        break
+      fi
+    done
+
+    if $has_backup; then
         read -p "系统存在备份 是否删除备份? (y/N): " delete_backup
 
         if [[ "$delete_backup" =~ ^[Yy]$ ]]; then
-            echo "删除系统备份: $backup_path"
-            rm -rf "$backup_path"
+            echo "删除系统备份..."
+            for file in "${backup_files[@]}"; do
+                if [ -f "$file" ]; then
+                    echo "删除备份文件: $file"
+                    rm -f "$file"
+                fi
+            done
         fi
     fi
 
@@ -962,7 +925,7 @@ delete_system() {
     rm -rf "$sys_path"
 
     echo "系统 $os_name 删除成功"
-    read -p "按回车键继续..." pause
+    pause_func
     return 0
 }
 
@@ -1000,15 +963,17 @@ config_new_system() {
         return 1
     fi
 
-    mkdir -p "$sys_dir/tmp"
+    mkdir -p "$sys_dir/tmp" "$sys_dir/usr/local/lib/servicectl/enabled"
     cp "$setup_script" "$sys_dir/tmp/setup.sh"
+    cp -r "$module_path/setup/servicectl"/* "$sys_dir/usr/local/lib/servicectl/"
 
-    chmod 777 "$sys_dir/tmp/setup.sh"
+    chmod 777 "$setup_script" "$sys_dir/usr/local/lib/servicectl/servicectl" "$sys_dir/usr/local/lib/servicectl/serviced"
 
     "$ruri_script" "$sys_dir" /bin/sh /tmp/setup.sh "$new_os" "$sys_password" "$sys_port"
 
     if [ $? -eq 0 ]; then
         echo "系统 $new_os 基础配置完成"
+        echoRgb "请牢记你的密码: $sys_password 和端口: $sys_port" 3
         return 0
     else
         echo "系统 $new_os 基础配置失败"
@@ -1048,7 +1013,8 @@ switch_lxc_os() {
         return 1
     fi
 
-    sed -i "s/RURIMA_LXC_OS=\"[^\"]*\"/RURIMA_LXC_OS=\"$new_os\"/" "$CONFIG_FILE"
+    sed -i "s/^RURIMA_LXC_OS=.*/RURIMA_LXC_OS=$new_os/" "$CONFIG_FILE"
+    sed -i "s|^CONTAINER_DIR=.*|CONTAINER_DIR=$BASE_DIR/$new_os|" "$CONFIG_FILE"
 
     if [ $? -eq 0 ]; then
         echo "成功将系统切换为 $new_os"
@@ -1069,26 +1035,34 @@ switch_lxc_os() {
     fi
 }
 
+print_installed_systems() {
+    local installed_systems=()
+    for os in "${OS_LIST[@]}"; do
+        if [ -d "$BASE_DIR/$os" ]; then
+            installed_systems+=("$os")
+        fi
+    done
+
+    echo "已安装系统 (${#installed_systems[@]}): "
+    if [ ${#installed_systems[@]} -eq 0 ]; then
+        echo "  - 无"
+    else
+      for sys in "${installed_systems[@]}"; do
+        echo "  - $sys"
+      done
+    fi
+}
+
 main_menu() {
     while true; do
         clear
         echo "========== 系统管理工具 v1.0 =========="
         echo "系统环境: "
         echo "- 基础目录: $BASE_DIR"
-        echo "- 备份目录: /data"
+        echo "- 备份目录: $BACKUP_DIR"
         echo "-----------------------------------"
 
-        local installed_systems=()
-        for os in "${OS_LIST[@]}"; do
-            if [ -d "$BASE_DIR/$os" ]; then
-                installed_systems+=("$os")
-            fi
-        done
-
-        echo "已安装系统 (${#installed_systems[@]}): "
-        for sys in "${installed_systems[@]}"; do
-            echo "- $sys"
-        done
+        print_installed_systems
 
         echo "-----------------------------------"
         echo "主菜单: "
@@ -1109,21 +1083,28 @@ main_menu() {
                 ;;
             2)
                 check_installed_systems
-                read -p "按回车键继续..." pause
+                pause_func
                 ;;
             3)
                 read -p "请输入系统名称: " os_name
                 read -p "请输入镜像源 (default/tuna/ustc/sjtu): " mirror
                 check_os_versions "$os_name" "$mirror"
-                read -p "按回车键继续..." pause
+                pause_func
                 ;;
             4)
                 download_system_menu
                 ;;
             5)
+                local installed_systems=()
+                for os in "${OS_LIST[@]}"; do
+                    if [ -d "$BASE_DIR/$os" ]; then
+                        installed_systems+=("$os")
+                    fi
+                done
+
                 if [ ${#installed_systems[@]} -eq 0 ]; then
                     echo "当前没有已安装的系统"
-                    read -p "按回车键继续..." pause
+                    pause_func
                 else
                     echo "已安装系统: "
                     for ((i=0; i<${#installed_systems[@]}; i++)); do
@@ -1132,22 +1113,31 @@ main_menu() {
 
                     read -p "选择要删除的系统 (0 返回): " delete_choice
 
-                    if [ "$delete_choice" -gt 0 ] 2>/dev/null && [ "$delete_choice" -le ${#installed_systems[@]} ] 2>/dev/null; then
+                    if [[ "$delete_choice" =~ ^[0-9]+$ ]] && [ "$delete_choice" -gt 0 ] && [ "$delete_choice" -le ${#installed_systems[@]} ]; then
                         local system_to_delete="${installed_systems[$((delete_choice-1))]}"
-                        delete_system "$system_to_delete"
-
+                        read -p "确定要删除系统 $system_to_delete 吗? (y/N): " confirm
+                        if [[ "$confirm" =~ ^[yY]$ ]]; then
+                            delete_system "$system_to_delete"
+                        fi
+                    elif [ "$delete_choice" -eq 0 ]; then
+                        :
+                    else
+                        echo "无效的选择"
                     fi
+                    pause_func
                 fi
                 ;;
             6)
                 read -p "请输入要切换的系统名称: " new_os
-                if [ -d "$BASE_DIR/$new_os" ]; then
+                if [ -z "$new_os" ]; then
+                  echo "系统名称不能为空"
+                elif [ -d "$BASE_DIR/$new_os" ]; then
                     switch_lxc_os "$new_os"
                 else
                     echo "系统 $new_os 未安装"
                     echo "请先下载系统镜像或检查已安装系统路径"
                 fi
-                read -p "按回车键继续..." pause
+                pause_func
                 ;;
             0)
                 echo "感谢使用 再见! "
@@ -1156,7 +1146,7 @@ main_menu() {
                 ;;
             *)
                 echo "无效的选择"
-                read -p "按回车键继续..." pause
+                pause_func
                 ;;
         esac
     done

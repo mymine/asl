@@ -68,8 +68,8 @@ jobs:
             local os=$1
             local version=$2
 
-            sed -i "s/RURIMA_LXC_OS=\".*\"/RURIMA_LXC_OS=\"${os}\"/g" config.conf
-            sed -i "s/RURIMA_LXC_OS_VERSION=\".*\"/RURIMA_LXC_OS_VERSION=\"${version}\"/g" config.conf
+            sed -i "s/^RURIMA_LXC_OS=.*/RURIMA_LXC_OS=${os}/g" config.conf
+            sed -i "s/^RURIMA_LXC_OS_VERSION=.*/RURIMA_LXC_OS_VERSION=${version}/g" config.conf
 
             zip -r "../asl-${os}-${version}.zip" . -x "*.git/*" -x ".github/*"
 
