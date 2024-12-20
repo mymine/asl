@@ -100,7 +100,10 @@ automatic() {
     ui_print "- Downloading the root filesystem using the source ${RURIMA_LXC_MIRROR}..."
 
     rurima lxc pull -n -m ${RURIMA_LXC_MIRROR} -o ${RURIMA_LXC_OS} -v ${RURIMA_LXC_OS_VERSION} -s "$CONTAINER_DIR"
-
+    if [[ $? != 0 ]]; then
+        ui_print "- Download failed. Attempting to download the root filesystem using the fallback source ${RURIMA_LXC_MIRROR_FALLBACK}..."
+        rurima lxc pull -n -m ${RURIMA_LXC_MIRROR_FALLBACK} -o ${RURIMA_LXC_OS} -v ${RURIMA_LXC_OS_VERSION} -s "$CONTAINER_DIR"
+    fi
     ui_print "- Starting the chroot environment to perform automated installation..."
     ui_print "- Please ensure the network environment is stable. The process may take some time, so please be patient!"
     ui_print ""
