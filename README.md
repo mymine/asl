@@ -17,6 +17,12 @@
   - bullseye
   - buster
   - trixie
+- fedora
+  - 39
+  - 40
+  - `41`
+- kali
+  - `current`
 - ubuntu
   - focal
   - `jammy`

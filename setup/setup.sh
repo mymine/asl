@@ -219,16 +219,53 @@ setup_debian() {
     apt autoclean
 }
 
+setup_fedora() {
+    dnf update -y
+    dnf install -y openssh-server
+    dnf clean all
+
+    ln -s /usr/local/lib/servicectl/serviced /usr/bin/serviced
+    ln -s /usr/local/lib/servicectl/servicectl /usr/bin/servicectl
+
+    ssh-keygen -A
+}
+
+setup_kali() {
+    apt update
+    apt install -y openssh-server
+    apt autoclean
+
+    # apt install kali-tools-top10
+    # apt install kali-linux-all
+}
+
 configure_ssh() {
     local port=${PORT:-22}
 
-    sed -i 's/^#*PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
-    grep -q "^#*PasswordAuthentication" /etc/ssh/sshd_config || echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
-    sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
-    sed -i "s/^#*Port .*/Port ${port}/" /etc/ssh/sshd_config
-    sed -i 's/^UsePAM yes/UsePAM no/' /etc/ssh/sshd_config
-}
+    if grep -Eq "^#?\s*PermitRootLogin" /etc/ssh/sshd_config; then
+        sed -i 's/^#\?\s*PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+    else
+        echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+    fi
 
+    if grep -Eq "^#?\s*PasswordAuthentication" /etc/ssh/sshd_config; then
+        sed -i 's/^#\?\s*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    else
+        echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
+    fi
+
+    if grep -Eq "^#?\s*Port" /etc/ssh/sshd_config; then
+        sed -i "s/^#\?\s*Port .*/Port ${port}/" /etc/ssh/sshd_config
+    else
+        echo "Port ${port}" >> /etc/ssh/sshd_config
+    fi
+
+    if grep -Eq "^#?\s*UsePAM" /etc/ssh/sshd_config; then
+        sed -i 's/^#\?\s*UsePAM.*/UsePAM no/' /etc/ssh/sshd_config
+    else
+        echo "UsePAM no" >> /etc/ssh/sshd_config
+    fi
+}
 
 main() {
     configure_dns_host
@@ -251,6 +288,12 @@ main() {
             ;;
         debian|ubuntu)
             setup_debian
+            ;;
+        fedora)
+            setup_fedora
+            ;;
+        kali)
+            setup_kali
             ;;
         *)
             echo "Unsupported LXC OS: $LXC_OS"
