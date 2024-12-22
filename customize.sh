@@ -104,11 +104,12 @@ automatic() {
         ui_print "- Download failed. Attempting to download the root filesystem using the fallback source ${RURIMA_LXC_MIRROR_FALLBACK}..."
         rurima lxc pull -n -m ${RURIMA_LXC_MIRROR_FALLBACK} -o ${RURIMA_LXC_OS} -v ${RURIMA_LXC_OS_VERSION} -s "$CONTAINER_DIR"
     fi
+
     ui_print "- Starting the chroot environment to perform automated installation..."
     ui_print "- Please ensure the network environment is stable. The process may take some time, so please be patient!"
     ui_print ""
     sleep 2
-    getprop ro.product.model >"$CONTAINER_DIR/etc/hostname"
+    getprop ro.product.model > "$CONTAINER_DIR/etc/hostname"
     mkdir -p "$CONTAINER_DIR/tmp" "$CONTAINER_DIR/usr/local/lib/servicectl/enabled"
     cp "$MODPATH/setup/setup.sh" "$CONTAINER_DIR/tmp/setup.sh"
     cp -r "$MODPATH/setup/servicectl"/* "$CONTAINER_DIR/usr/local/lib/servicectl/"
@@ -117,7 +118,7 @@ automatic() {
     ruri "$CONTAINER_DIR" /bin/sh /tmp/setup.sh "$RURIMA_LXC_OS" "$PASSWORD" "$PORT"
 
     inotifyfile
-    #rm "$CONTAINER_DIR"/tmp/setup.sh
+
     ui_print "- Automated installation completed!"
     ui_print "- Note: Please change the default password. Exposing an SSH port with password authentication instead of key-based authentication is always a high-risk behavior!"
 }
