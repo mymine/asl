@@ -248,8 +248,8 @@ configure_ssh() {
         echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
     fi
 
-    if grep -Eq "^#?\s*PasswordAuthentication" /etc/ssh/sshd_config; then
-        sed -i 's/^#\?\s*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    if grep -Eq "^#?\s*PasswordAuthentication\s" /etc/ssh/sshd_config; then
+        sed -i 's/^#\?\s*PasswordAuthentication\s.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
     else
         echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
     fi
