@@ -41,7 +41,7 @@ echo
 echo "Welcome to Termux"
 echoRgb "欢迎使用 Android Subsystem for GNU/Linux" 4
 
-for cmd in curl wget rsync; do
+for cmd in curl wget; do
     command -v "$cmd" >/dev/null 2>&1 || abort "! 依赖的命令 $cmd 未安装" 
 done
 
@@ -744,7 +744,7 @@ download_system_image() {
 
     IFS=';' read -r distro version arch variant date path <<< "$version_info"
 
-    local download_url="${base_url}${path}/rootfs.tar.xz"
+    local download_url="${base_url}${path}rootfs.tar.xz"
     local download_file="/data/local/tmp/${os_name}_${version}_rootfs.tar.xz"
 
     mkdir -p "$target_dir" /data/local/tmp
@@ -925,7 +925,6 @@ delete_system() {
     rm -rf "$sys_path"
 
     echo "系统 $os_name 删除成功"
-    pause_func
     return 0
 }
 

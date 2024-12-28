@@ -1,6 +1,6 @@
 MODDIR=${0%/*}
 PORT=$(sed -n 's/^PORT=\(.*\)/\1/p' "$MODDIR/config.conf")
-PID=$("$MODDIR/bin/fuser" "$PORT/tcp" 2>/dev/null)
+PID=$(fuser "$PORT/tcp" 2>/dev/null)
 
 BETA() {
     local PREFIX=/data/user/0/com.termux/files/usr
@@ -43,13 +43,13 @@ BETA() {
 }
 
 update_ssh() {
-    local rootfs="/data/$(sed -n 's/^RURIMA_LXC_OS="\([^"]*\)"/\1/p' "$MODDIR/config.conf")"
+    local rootfs=$(sed -n 's/^CONTAINER_DIR=\(.*\)$/\1/p' "$MODDIR/config.conf")
 
     sleep 2
     if lsof | grep "$rootfs" | awk '{print $2}' | uniq | grep -q "sshd"; then
         sed -i 's|^description=.*|description=\[ running😉 \] Android Subsystem for GNU/Linux Powered by ruri|' "$MODDIR/module.prop"
     else
-        sed -i 's|^description=.*|description=\[ running⚠️ \] Android Subsystem for GNU/Linux Powered by ruri|' "$MODDIR/module.prop"
+        sed -i 's|^description=.*|description=\[ SSH exception⚠️ \] Android Subsystem for GNU/Linux Powered by ruri|' "$MODDIR/module.prop"
     fi
 }
 

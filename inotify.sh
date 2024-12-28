@@ -8,8 +8,6 @@ if command -v magisk >/dev/null 2>&1; then
     fi
 fi
 
-export PATH="$MODULEDIR/bin:$PATH"
-
 while [ $(getprop sys.boot_completed) != 1 ]; do
     sleep 2
 done

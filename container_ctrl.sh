@@ -1,13 +1,8 @@
 #!/bin/sh
 
-init_setup() {
-    MODDIR=${0%/*}
-    export PATH="$MODDIR/bin:$PATH"
-    . "$MODDIR/config.conf"
-}
+. "${0%/*}/config.conf"
 
 ruriumount() {
-    init_setup
     fuser -k "$CONTAINER_DIR" >/dev/null 2>&1
     ruri -U "$CONTAINER_DIR" >/dev/null 2>&1
     umount -lvf "$CONTAINER_DIR" 2>/dev/null
@@ -22,11 +17,11 @@ ruriumount() {
 ruristart() {
     ruriumount
 
-    # The servicectl command is an open-source project. If you find it inconvenient to use, you can opt for other startup commands It is not mandatory
-    # e.g. /usr/sbin/sshd
     case "$RURIMA_LXC_OS" in
         archlinux|centos|fedora)
             START_SERVICES="servicectl start sshd"
+            # you can opt for other startup commands It is not mandatory
+            # e.g. /usr/sbin/sshd
             ;;
         debian|kali|ubuntu)
             START_SERVICES="service ssh start"
