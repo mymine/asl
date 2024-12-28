@@ -21,8 +21,8 @@ bootinspect() {
 link_busybox() {
     local busybox_file=""
 
-    if [ -f "$MODPATH/bin/busybox" ]; then
-        busybox_file="$MODPATH/bin/busybox"
+    if [ -f "$MODPATH/system/xbin/busybox" ]; then
+        busybox_file="$MODPATH/system/xbin/busybox"
     else
         for path in $BUSYBOX_PATHS; do
             if [ -f "$path" ]; then
@@ -33,12 +33,16 @@ link_busybox() {
     fi
 
     if [ -n "$busybox_file" ]; then
-        mkdir -p "$MODPATH/bin"
-        # "$busybox_file" --install -s "$MODPATH/bin"
+        mkdir -p "$MODPATH/system/xbin"
+        # "$busybox_file" --install -s "$MODPATH/system/xbin"
         # This method creates links pointing to all commands of busybox, so it is not recommended. The following is an alternative approach for creating symbolic links pointing to the busybox file for specific commands
-        for cmd in fuser inotifyd; do
-            ln -s "$busybox_file" "$MODPATH/bin/$cmd"
+        for cmd in fuser; do
+            ln -s "$busybox_file" "$MODPATH/system/xbin/$cmd"
         done
+
+        if ! inotifyd --help >/dev/null 2>&1; then
+            ln -sf "$busybox_file" "$MODPATH/system/xbin/inotifyd"
+        fi
     else
         abort "- No available Busybox file found Please check your installation environment"
     fi
@@ -57,18 +61,14 @@ inotifyfile() {
 }
 
 configuration() {
-    set_perm_recursive "$MODPATH/bin" 0 0 0755 0755
+    set_perm_recursive "$MODPATH/system/xbin" 0 0 0755 0755
     . "$MODPATH/config.conf"
 
-    BUSYBOX_PATHS="/data/adb/magisk/busybox
-/data/adb/ksu/bin/busybox
-/data/adb/ap/bin/busybox"
+    BUSYBOX_PATHS="/data/adb/magisk/busybox /data/adb/ksu/bin/busybox /data/adb/ap/bin/busybox"
 
     BASE_DIR="/data"
     CONTAINER_DIR="${BASE_DIR}/${RURIMA_LXC_OS}"
     echo "CONTAINER_DIR=${BASE_DIR}/${RURIMA_LXC_OS}" >> "$MODPATH/config.conf"
-
-    export PATH="$MODPATH/bin:$PATH"
 
     CASE=$(sed -n '/case "\$LXC_OS"/,/^[[:space:]]*esac/p' "$MODPATH/setup/setup.sh")
     SUPPORT=$(echo "$CASE" | \

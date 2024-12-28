@@ -1,6 +1,6 @@
 <h2 align="center">Android Subsystem for GNU/Linux</h2>
 
-[![Repo size](https://img.shields.io/github/repo-size/lin1328/asl?logo=github&logoColor=white)](https://github.com/lin1328/asl)
+[![Repo size](https://img.shields.io/github/repo-size/Moe-hacker/asl?logo=github&logoColor=white)](https://github.com/Moe-hacker/asl)
 
 <details>
 <summary><strong>Currently Supported Systems</strong></summary>
@@ -37,7 +37,7 @@
 > - If there are any bugs, please report them. Compatibility with all devices is not guaranteed
 > - If you install the module twice, it will backup old container_dir and install a new container
 > - you can install multipe OS by changeing the module id and ssh port, but this action not supported officially
-## How to connect:
+## How to connect
 Use port 22, user root and password 123456 by default,          
 but, please change the password once you connected to the container, and it's better to use ssh key instead of password login, note that please do not expose the ssh port to the pubnet.       
 ## About the Binary
