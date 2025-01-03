@@ -178,8 +178,8 @@ Endofpacman2
     pacman -Syu --noconfirm
     pacman -Sy --noconfirm --needed openssh
 
-    ln -s /usr/local/lib/servicectl/serviced /usr/bin/serviced
-    ln -s /usr/local/lib/servicectl/servicectl /usr/bin/servicectl
+    ln -sf /usr/local/lib/servicectl/serviced /usr/bin/serviced
+    ln -sf /usr/local/lib/servicectl/servicectl /usr/bin/servicectl
 
     ssh-keygen -A
 
@@ -208,8 +208,8 @@ setup_centos() {
     yum install -y openssh-server
     yum clean all
 
-    ln -s /usr/local/lib/servicectl/serviced /usr/bin/serviced
-    ln -s /usr/local/lib/servicectl/servicectl /usr/bin/servicectl
+    ln -sf /usr/local/lib/servicectl/serviced /usr/bin/serviced
+    ln -sf /usr/local/lib/servicectl/servicectl /usr/bin/servicectl
 
     ssh-keygen -A
 }
@@ -225,8 +225,8 @@ setup_fedora() {
     dnf install -y openssh-server
     dnf clean all
 
-    ln -s /usr/local/lib/servicectl/serviced /usr/bin/serviced
-    ln -s /usr/local/lib/servicectl/servicectl /usr/bin/servicectl
+    ln -sf /usr/local/lib/servicectl/serviced /usr/bin/serviced
+    ln -sf /usr/local/lib/servicectl/servicectl /usr/bin/servicectl
 
     ssh-keygen -A
 }

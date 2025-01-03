@@ -70,6 +70,7 @@ jobs:
 
             sed -i "s/^RURIMA_LXC_OS=.*/RURIMA_LXC_OS=${os}/g" config.conf
             sed -i "s/^RURIMA_LXC_OS_VERSION=.*/RURIMA_LXC_OS_VERSION=${version}/g" config.conf
+            sed -i "s/^CONTAINER_DIR=.*/CONTAINER_DIR=/data/${os}/g" config.conf
 
             zip -r "../asl-${os}-${version}.zip" . -x "*.git/*" -x ".github/*"
 

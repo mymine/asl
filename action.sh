@@ -56,7 +56,7 @@ update_ssh() {
 if [ -n "$PID" ]; then
     printf "- Stopping container...\n\n"
     if "$MODDIR/container_ctrl.sh" stop; then
-        sed -i 's|^description=.*|description=stopped🙁 Android Subsystem for GNU/Linux Powered by ruri|' "$MODDIR/module.prop"
+        sed -i 's|^description=.*|description=\[ stopped🙁 \] Android Subsystem for GNU/Linux Powered by ruri|' "$MODDIR/module.prop"
         BETA
     fi
 else
