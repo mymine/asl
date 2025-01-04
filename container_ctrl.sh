@@ -2,6 +2,10 @@
 
 . "${0%/*}/config.conf"
 
+if [ ! -e "$CONTAINER_DIR/etc/os-release" ]; then
+    exit 1
+fi
+
 ruriumount() {
     fuser -k "$CONTAINER_DIR" >/dev/null 2>&1
     ruri -U "$CONTAINER_DIR" >/dev/null 2>&1

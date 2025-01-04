@@ -1,5 +1,6 @@
 SKIPUNZIP=0
 
+ASL=
 REPLACE="
 "
 bootinspect() {
@@ -20,24 +21,21 @@ bootinspect() {
 
 link_busybox() {
     local busybox_file=""
+    local BUSYBOX_PATHS="/data/adb/magisk/busybox /data/adb/ksu/bin/busybox /data/adb/ap/bin/busybox"
 
-    if [ -f "$MODPATH/system/xbin/busybox" ]; then
-        busybox_file="$MODPATH/system/xbin/busybox"
-    else
-        for path in $BUSYBOX_PATHS; do
-            if [ -f "$path" ]; then
-                busybox_file="$path"
-                break
-            fi
-        done
-    fi
+    for path in $BUSYBOX_PATHS; do
+        if [ -f "$path" ]; then
+            busybox_file="$path"
+            break
+        fi
+    done
 
     if [ -n "$busybox_file" ]; then
         mkdir -p "$MODPATH/system/xbin"
         # "$busybox_file" --install -s "$MODPATH/system/xbin"
         # This method creates links pointing to all commands of busybox, so it is not recommended. The following is an alternative approach for creating symbolic links pointing to the busybox file for specific commands
         for cmd in fuser; do
-            ln -s "$busybox_file" "$MODPATH/system/xbin/$cmd"
+            ln -sf "$busybox_file" "$MODPATH/system/xbin/$cmd"
         done
 
         if ! inotifyd --help >/dev/null 2>&1; then
@@ -46,6 +44,9 @@ link_busybox() {
     else
         abort "- No available Busybox file found Please check your installation environment"
     fi
+
+    set_perm_recursive "$MODPATH/system/xbin" 0 0 0755 0755
+    export PATH="$MODPATH/system/xbin:$PATH"
 }
 
 inotifyfile() {
@@ -61,20 +62,13 @@ inotifyfile() {
 }
 
 configuration() {
-    set_perm_recursive "$MODPATH/system/xbin" 0 0 0755 0755
     . "$MODPATH/config.conf"
-
-    BUSYBOX_PATHS="/data/adb/magisk/busybox /data/adb/ksu/bin/busybox /data/adb/ap/bin/busybox"
 
     BASE_DIR="/data"
     CONTAINER_DIR="${BASE_DIR}/${RURIMA_LXC_OS}"
-    echo "CONTAINER_DIR=${BASE_DIR}/${RURIMA_LXC_OS}" >> "$MODPATH/config.conf"
+    sed -i "s|^CONTAINER_DIR=.*|CONTAINER_DIR=$CONTAINER_DIR|" "$MODPATH/config.conf"
 
-    CASE=$(sed -n '/case "\$LXC_OS"/,/^[[:space:]]*esac/p' "$MODPATH/setup/setup.sh")
-    SUPPORT=$(echo "$CASE" | \
-        sed -n 's/^[[:space:]]*\([a-zA-Z0-9|]*\))$/\1/p' | \
-        tr '|' ' ' | \
-        tr '\n' ' ')
+    SUPPORT=$(sed -nE 's/^OS_LIST="([^"]+)"/\1/p' "$MODPATH/setup/setup.sh")
 
     if ! echo "$SUPPORT" | grep -qw "$RURIMA_LXC_OS"; then
         abort "- $RURIMA_LXC_OS is not supported by the setup script"
@@ -116,8 +110,7 @@ automatic() {
     chmod 777 "$CONTAINER_DIR/tmp/setup.sh" "$CONTAINER_DIR/usr/local/lib/servicectl/servicectl" "$CONTAINER_DIR/usr/local/lib/servicectl/serviced"
 
     ruri "$CONTAINER_DIR" /bin/sh /tmp/setup.sh "$RURIMA_LXC_OS" "$PASSWORD" "$PORT"
-
-    inotifyfile
+    ruri -U "$CONTAINER_DIR"
 
     ui_print "- Automated installation completed!"
     ui_print "- Note: Please change the default password. Exposing an SSH port with password authentication instead of key-based authentication is always a high-risk behavior!"
@@ -125,10 +118,14 @@ automatic() {
 
 main() {
     bootinspect
-    configuration
     link_busybox
-    automatic
-    ruri -U "$CONTAINER_DIR"
+
+    if [ -z "$ASL" ]; then
+        configuration
+        automatic
+    fi
+
+    inotifyfile
 }
 
 main
@@ -137,4 +134,5 @@ main
 set_perm "$MODPATH/container_ctrl.sh" 0 0 0755
 
 ui_print ""
-ui_print "- Please restart the system"
+(sleep 5 && reboot) &
+ui_print "The system will restart in 5 seconds..."

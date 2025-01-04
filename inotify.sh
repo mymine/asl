@@ -1,5 +1,5 @@
 #!/bin/sh
-MODULEID="moduleid"
+MODULEID="asl"
 MODULEDIR="/data/adb/modules/$MODULEID"
 
 if command -v magisk >/dev/null 2>&1; then

@@ -1,6 +1,7 @@
 LXC_OS=$1
 PASSWORD=$2
 PORT=$3
+OS_LIST="alpine archlinux centos debian fedora kali ubuntu"
 
 configure_dns_host() {
     if [ -L /etc/resolv.conf ]; then
@@ -177,8 +178,8 @@ Endofpacman2
     pacman -Syu --noconfirm
     pacman -Sy --noconfirm --needed openssh
 
-    ln -s /usr/local/lib/servicectl/serviced /usr/bin/serviced
-    ln -s /usr/local/lib/servicectl/servicectl /usr/bin/servicectl
+    ln -sf /usr/local/lib/servicectl/serviced /usr/bin/serviced
+    ln -sf /usr/local/lib/servicectl/servicectl /usr/bin/servicectl
 
     ssh-keygen -A
 
@@ -207,8 +208,8 @@ setup_centos() {
     yum install -y openssh-server
     yum clean all
 
-    ln -s /usr/local/lib/servicectl/serviced /usr/bin/serviced
-    ln -s /usr/local/lib/servicectl/servicectl /usr/bin/servicectl
+    ln -sf /usr/local/lib/servicectl/serviced /usr/bin/serviced
+    ln -sf /usr/local/lib/servicectl/servicectl /usr/bin/servicectl
 
     ssh-keygen -A
 }
@@ -224,8 +225,8 @@ setup_fedora() {
     dnf install -y openssh-server
     dnf clean all
 
-    ln -s /usr/local/lib/servicectl/serviced /usr/bin/serviced
-    ln -s /usr/local/lib/servicectl/servicectl /usr/bin/servicectl
+    ln -sf /usr/local/lib/servicectl/serviced /usr/bin/serviced
+    ln -sf /usr/local/lib/servicectl/servicectl /usr/bin/servicectl
 
     ssh-keygen -A
 }
@@ -268,36 +269,32 @@ configure_ssh() {
 }
 
 main() {
+    local valid=0
+
+    for os in $OS_LIST; do
+        if [ "$LXC_OS" = "$os" ]; then
+            valid=1
+            break
+        fi
+    done
+
+    if [ "$valid" -eq 0 ]; then
+        echo "Unsupported LXC operating system '$LXC_OS'"
+        return 1
+    fi
+
     configure_dns_host
-
     create_groups
-
     add_user_to_groups
-
     echo "root:${PASSWORD:-123456}" | chpasswd
 
     case "$LXC_OS" in
-        archlinux)
-            setup_archlinux
-            ;;
-        alpine)
-            setup_alpine
-            ;;
-        centos)
-            setup_centos
-            ;;
-        debian|ubuntu)
-            setup_debian
-            ;;
-        fedora)
-            setup_fedora
-            ;;
-        kali)
-            setup_kali
-            ;;
-        *)
-            echo "Unsupported LXC OS: $LXC_OS"
-            ;;
+    archlinux) setup_archlinux ;;
+    alpine) setup_alpine ;;
+    centos) setup_centos ;;
+    debian|ubuntu) setup_debian ;;
+    fedora) setup_fedora ;;
+    kali) setup_kali ;;
     esac
 
     configure_ssh
