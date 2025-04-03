@@ -922,6 +922,7 @@ delete_system() {
     fi
 
     echo "删除系统目录: $sys_path"
+    ruri -U $sys_path
     rm -rf "$sys_path"
 
     echo "系统 $os_name 删除成功"
