@@ -81,7 +81,7 @@ jobs:
           container_zip "alpine" "edge"
           container_zip "centos" "9-Stream"
           container_zip "debian" "bookworm"
-          container_zip "fedora" "41"
+          container_zip "fedora" "42"
           container_zip "kali" "current"
           container_zip "ubuntu" "oracular"
 
