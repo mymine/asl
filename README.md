@@ -2,6 +2,9 @@
 
 [![Repo size](https://img.shields.io/github/repo-size/Moe-hacker/asl?logo=github&logoColor=white)](https://github.com/Moe-hacker/asl)
 
+## Warning:
+I just bumped rurima to newest version, if there's any issue, please report.      
+
 <details>
 <summary><strong>Currently Supported Systems</strong></summary>
 
